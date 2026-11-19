@@ -13,6 +13,8 @@ Extensión gratuita de Chrome de escritorio para alternar tus cuentas de TikTok 
 
 Para actualizar una instalación existente, extrae el ZIP en la misma carpeta que ya cargaste y pulsa **Recargar** en la tarjeta de MultiTikTok en `chrome://extensions`. Así Chrome conserva las sesiones guardadas por la extensión.
 
+La actualización automática estará disponible para las instalaciones desde Chrome Web Store cuando Google apruebe la primera publicación. Quien ya use el ZIP tendrá que instalar la edición de la tienda una vez. Chrome puede asignarle un ID distinto a la instalación descomprimida, por lo que esa edición podría requerir volver a guardar las cuentas.
+
 ## Agregar cuentas y cambiar entre ellas
 
 1. Abre TikTok en una sola pestaña, inicia sesión y comprueba el `@usuario`.
@@ -44,5 +46,13 @@ Desde **Apoyar** puedes seguir a [@quijotevitruvio](https://github.com/quijotevi
 ## Compilar desde el código fuente
 
 Carga la carpeta `extension` como extensión descomprimida. Para crear el ZIP, ejecuta `python scripts/build.py` desde la raíz del proyecto. El archivo resultante queda en `dist`.
+
+## Publicar futuras versiones
+
+La acción [Chrome Web Store](https://github.com/quijotevitruvio/milti-tiktok/actions/workflows/chrome-web-store.yml) verifica que el ZIP de cada versión pública de GitHub coincida con su etiqueta `vX.Y.Z` y su manifiesto. Una vez conectada a la tienda, envía el paquete para revisión. Chrome distribuye la versión después de que Google la aprueba. [API de Chrome Web Store](https://developer.chrome.com/docs/webstore/using-api)
+
+Para conectar la tienda por primera vez, crea la ficha en el [panel de desarrollador](https://chrome.google.com/webstore/devconsole) con el ZIP de GitHub. Después habilita Chrome Web Store API en Google Cloud, vincula una cuenta de servicio desde el panel y usa [Workload Identity Federation](https://github.com/google-github-actions/auth#workload-identity-federation-through-a-service-account) para que GitHub obtenga tokens de corta duración. Limita el proveedor al repositorio `quijotevitruvio/milti-tiktok` y a su workflow `chrome-web-store.yml`. [Configurar una cuenta de servicio](https://developer.chrome.com/docs/webstore/service-accounts)
+
+En **Settings → Secrets and variables → Actions → Variables**, configura `CWS_PUBLISHER_ID`, `CWS_ITEM_ID`, `CWS_WORKLOAD_IDENTITY_PROVIDER` y `CWS_SERVICE_ACCOUNT`. Activa el envío con `CWS_ENABLED=true` cuando esté lista la ficha. El flujo también se puede ejecutar desde **Actions**, con un tag ya publicado y **Solo verificar el ZIP** para comprobar el paquete sin enviarlo.
 
 [Privacidad y permisos](PRIVACIDAD.md) · [Licencia MIT](LICENSE)

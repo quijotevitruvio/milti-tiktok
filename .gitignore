@@ -9,3 +9,4 @@ PLAN.md
 *.pem
 *.key
 *.pfx
+__pycache__/
