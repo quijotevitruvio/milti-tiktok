@@ -1,0 +1,11 @@
+bin/
+obj/
+dist/
+.ecc/
+graphify-out/
+PLAN.md
+.env
+.env.*
+*.pem
+*.key
+*.pfx

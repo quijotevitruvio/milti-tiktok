@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "MultiTikTok",
+  "version": "0.1.0",
+  "description": "Abre tus cuentas de TikTok en perfiles separados de Chrome.",
+  "permissions": ["storage", "nativeMessaging"],
+  "background": { "service_worker": "worker.js", "type": "module" },
+  "action": {
+    "default_title": "MultiTikTok",
+    "default_popup": "popup.html",
+    "default_icon": "icon.png"
+  },
+  "icons": { "128": "icon.png" },
+  "incognito": "not_allowed"
+}

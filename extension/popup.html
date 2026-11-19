@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MultiTikTok</title>
+  <link rel="stylesheet" href="popup.css">
+  <script type="module" src="popup.js"></script>
+</head>
+<body>
+  <header>
+    <img src="icon.png" alt="" width="36" height="36">
+    <h1>MultiTikTok</h1>
+    <button id="refresh" class="quiet" type="button">Actualizar</button>
+  </header>
+  <main>
+    <div class="list-heading">
+      <h2 id="accounts-title">Tus cuentas</h2>
+      <button id="previous" class="quiet" type="button" hidden>Volver a la anterior</button>
+    </div>
+    <p id="status" role="status"></p>
+    <ul id="accounts" aria-labelledby="accounts-title"></ul>
+    <form id="add" hidden>
+      <label for="profile">Perfil de Chrome</label>
+      <select id="profile" required></select>
+      <label for="alias">Alias</label>
+      <input id="alias" placeholder="Ej. Personal o @usuario" maxlength="48">
+      <button class="primary" type="submit">Vincular perfil</button>
+    </form>
+    <p id="help" class="help" hidden></p>
+    <aside id="invite" aria-label="Apoyar el proyecto" hidden>
+      <p>¿Te sirvió MultiTikTok?</p>
+      <div>
+        <a id="star" href="https://github.com/quijotevitruvio/milti-tiktok" target="_blank" rel="noopener noreferrer">Dar una estrella</a>
+        <button id="dismiss" class="quiet" type="button">Ahora no</button>
+      </div>
+    </aside>
+  </main>
+  <dialog id="edit" aria-labelledby="edit-title">
+    <form id="edit-form">
+      <h2 id="edit-title">Editar cuenta</h2>
+      <label for="edit-alias">Alias</label>
+      <input id="edit-alias" maxlength="48" required>
+      <label class="check"><input id="favorite" type="checkbox"> Fijar como favorita</label>
+      <div class="dialog-actions">
+        <button id="unlink" class="danger" type="button">Desvincular</button>
+        <button id="cancel" class="quiet" type="button">Cancelar</button>
+        <button class="primary" type="submit">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+  <template id="account-row">
+    <li>
+      <button type="button" class="account">
+        <span class="avatar" aria-hidden="true"></span>
+        <span class="identity">
+          <strong class="name"></strong>
+          <span class="detail"></span>
+        </span>
+        <span class="open-label">Abrir</span>
+      </button>
+      <button type="button" class="more" aria-label="Editar cuenta">⋯</button>
+    </li>
+  </template>
+</body>
+</html>
