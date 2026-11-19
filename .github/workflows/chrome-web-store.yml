@@ -46,7 +46,7 @@ jobs:
             echo "::error::La etiqueta debe tener el formato vX.Y.Z."
             exit 1
           fi
-          gh release view "$RELEASE_TAG" --json isDraft,isPrerelease +            | jq -e '.isDraft == false and .isPrerelease == false' >/dev/null
+          gh release view "$RELEASE_TAG" --json isDraft,isPrerelease | jq -e '.isDraft == false and .isPrerelease == false' >/dev/null
           mkdir -p dist "$RUNNER_TEMP/release-source"
           gh release download "$RELEASE_TAG" --pattern MultiTikTok-Chrome.zip --dir dist
           git fetch --no-tags origin "refs/tags/$RELEASE_TAG"
@@ -76,4 +76,4 @@ jobs:
           CWS_PUBLISHER_ID: ${{ vars.CWS_PUBLISHER_ID }}
           CWS_ITEM_ID: ${{ vars.CWS_ITEM_ID }}
         run: |
-          python3 scripts/chrome_web_store.py "$PACKAGE" "$RELEASE_TAG" +            "$RUNNER_TEMP/release-source/extension" --submit
+          python3 scripts/chrome_web_store.py "$PACKAGE" "$RELEASE_TAG" "$RUNNER_TEMP/release-source/extension" --submit
