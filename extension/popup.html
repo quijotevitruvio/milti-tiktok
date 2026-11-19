@@ -11,7 +11,8 @@
   <header>
     <img src="icon.png" alt="" width="36" height="36">
     <h1>MultiTikTok</h1>
-    <button id="lock" class="quiet" type="button" hidden>Bloquear</button>
+    <button id="support" class="quiet" type="button">Apoyar</button>
+    <button id="settings" class="quiet" type="button" hidden>Configuración</button>
   </header>
   <main>
     <p id="status" role="status"></p>
@@ -20,10 +21,9 @@
       <button id="allow" class="primary" type="button">Permitir acceso a TikTok</button>
     </section>
     <form id="unlock" hidden>
-      <label id="phrase-label" for="phrase">Frase de acceso</label>
-      <input id="phrase" type="password" minlength="12" maxlength="256" required>
-      <p id="phrase-help" class="help"></p>
-      <button id="unlock-submit" class="primary" type="submit">Desbloquear</button>
+      <label for="phrase">Frase de acceso</label>
+      <input id="phrase" type="password" autocomplete="current-password" minlength="12" maxlength="256" required>
+      <button class="primary" type="submit">Desbloquear sesiones</button>
     </form>
     <p id="recovery" hidden>El último cambio se interrumpió. Restaura la sesión anterior para continuar.
       <button id="restore" class="primary" type="button">Restaurar sesión</button>
@@ -52,6 +52,31 @@
       </div>
     </aside>
   </main>
+  <dialog id="support-dialog" aria-labelledby="support-title">
+    <form method="dialog">
+      <h2 id="support-title">Apoyar MultiTikTok</h2>
+      <a href="https://github.com/quijotevitruvio" target="_blank" rel="noopener noreferrer">Seguir a @quijotevitruvio en GitHub</a>
+      <a href="https://github.com/quijotevitruvio/milti-tiktok" target="_blank" rel="noopener noreferrer">Dar una estrella al repositorio</a>
+      <a href="https://paypal.me/bibliotecologo" target="_blank" rel="noopener noreferrer">Invítame a un cafecito por PayPal</a>
+      <button class="quiet" type="submit">Cerrar</button>
+    </form>
+  </dialog>
+  <dialog id="preferences" aria-labelledby="preferences-title">
+    <form id="preferences-form">
+      <h2 id="preferences-title">Configuración</h2>
+      <label class="check"><input id="protect" type="checkbox"> Pedir frase de acceso</label>
+      <p class="help">Al activarla, se te pedirá al reiniciar Chrome o al bloquear el selector.</p>
+      <div id="new-phrase-fields" hidden>
+        <label for="new-phrase">Nueva frase de acceso</label>
+        <input id="new-phrase" type="password" autocomplete="new-password" minlength="12" maxlength="256" placeholder="Al menos 12 caracteres">
+      </div>
+      <div class="dialog-actions">
+        <button id="lock" class="quiet" type="button" hidden>Bloquear</button>
+        <button id="close-settings" class="quiet" type="button">Cerrar</button>
+        <button class="primary" type="submit">Guardar</button>
+      </div>
+    </form>
+  </dialog>
   <dialog id="edit" aria-labelledby="edit-title">
     <form id="edit-form">
       <h2 id="edit-title">Editar cuenta</h2>

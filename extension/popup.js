@@ -35,21 +35,15 @@ function announce(text, error = false) {
 }
 
 function render() {
-  const { allowed, unlocked, exists, accounts = [], recovery, active, previous, invite } = model;
+  const { allowed, unlocked, protected: protectionEnabled, accounts = [], recovery, active, previous, invite } = model;
   ui.permission.hidden = allowed !== false;
-  ui.unlock.hidden = !allowed || unlocked;
-  ui.lock.hidden = !unlocked;
+  ui.unlock.hidden = !allowed || unlocked || !protectionEnabled;
+  ui.settings.hidden = !unlocked;
   ui.manager.hidden = !allowed || !unlocked || recovery;
   ui.recovery.hidden = !allowed || !recovery;
   ui.invite.hidden = !allowed || !invite || recovery;
   ui.add.hidden = !accounts.length;
   ui.previous.hidden = !accounts.some((account) => account.id === previous && account.id !== active);
-  ui["phrase-label"].textContent = exists ? "Frase de acceso" : "Crea una frase de acceso";
-  ui["phrase-help"].textContent = exists
-    ? "Úsala para acceder a las sesiones guardadas."
-    : "Usa al menos 12 caracteres. Consérvala para recuperar tus sesiones cuando reinicies Chrome.";
-  ui.phrase.autocomplete = exists ? "current-password" : "new-password";
-  ui["unlock-submit"].textContent = exists ? "Desbloquear sesiones" : "Crear";
 
   const ordered = [...accounts].sort((first, second) =>
     Number(second.favorite) - Number(first.favorite) || collator.compare(first.alias, second.alias)
@@ -57,7 +51,16 @@ function render() {
   const rows = ordered.map((account) => {
     const row = ui["account-row"].content.cloneNode(true);
     row.querySelector(".name").textContent = account.alias;
-    row.querySelector(".avatar").textContent = Array.from(account.alias)[0].toLocaleUpperCase("es");
+    const avatar = row.querySelector(".avatar");
+    avatar.textContent = Array.from(account.alias)[0].toLocaleUpperCase("es");
+    if (account.avatar) {
+      const image = document.createElement("img");
+      image.alt = "";
+      image.referrerPolicy = "no-referrer";
+      image.addEventListener("error", () => image.remove(), { once: true });
+      image.src = account.avatar;
+      avatar.append(image);
+    }
     const detail = [];
     if (account.favorite) detail.push("Favorita");
     if (account.id === active) detail.push("Sesión detectada");
@@ -125,7 +128,34 @@ ui.unlock.addEventListener("submit", (event) => {
   ui.phrase.value = "";
   send("unlock", { phrase });
 });
-ui.lock.addEventListener("click", () => send("lock"));
+function updateProtectionForm() {
+  const needsPhrase = ui.protect.checked && !model.protected;
+  ui["new-phrase-fields"].hidden = !needsPhrase;
+  ui["new-phrase"].required = needsPhrase;
+  ui.lock.hidden = !model.protected;
+}
+
+ui.settings.addEventListener("click", () => {
+  ui.protect.checked = Boolean(model.protected);
+  ui["new-phrase"].value = "";
+  updateProtectionForm();
+  ui.preferences.showModal();
+});
+ui.protect.addEventListener("change", updateProtectionForm);
+ui.support.addEventListener("click", () => ui["support-dialog"].showModal());
+ui["close-settings"].addEventListener("click", () => ui.preferences.close());
+ui["preferences-form"].addEventListener("submit", (event) => {
+  event.preventDefault();
+  const enabled = ui.protect.checked;
+  const phrase = enabled ? ui["new-phrase"].value : null;
+  ui["new-phrase"].value = "";
+  ui.preferences.close();
+  if (enabled !== Boolean(model.protected)) send("setProtection", { phrase }, "Configuración guardada.");
+});
+ui.lock.addEventListener("click", () => {
+  ui.preferences.close();
+  send("lock");
+});
 ui.restore.addEventListener("click", () => send("recover", {}, "Sesión anterior restaurada."));
 ui.save.addEventListener("submit", (event) => {
   event.preventDefault();

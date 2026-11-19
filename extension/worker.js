@@ -1,5 +1,6 @@
 import { fingerprint, home, hostPermission, login, readCookies, replaceCookies } from "./sessions.js";
-import { lock, persist, readVault, unlock, VaultError } from "./vault.js";
+import { lock, persist, readVault, setProtection, unlock, VaultError } from "./vault.js";
+import { profilePhoto } from "./avatar.js";
 
 const transition = chrome.runtime.getURL("transition.html");
 const permissions = { origins: [hostPermission] };
@@ -31,13 +32,13 @@ function currentAccount(state, identity) {
 
 async function view(vault, allowed) {
   const { state } = vault;
-  if (!state) return { allowed, exists: vault.exists, unlocked: false };
+  if (!state) return { allowed, protected: true, unlocked: false };
   const active = allowed && !state.pending
     ? currentAccount(state, await fingerprint(await readCookies()))?.id ?? null : null;
   return {
-    allowed, exists: true, unlocked: true, active, previous: state.previous,
+    allowed, protected: Boolean(vault.salt), unlocked: true, active, previous: state.previous,
     recovery: Boolean(state.pending), invite: state.invite === "pending",
-    accounts: state.accounts.map(({ id, alias, favorite }) => ({ id, alias, favorite }))
+    accounts: state.accounts.map(({ id, alias, favorite, avatar }) => ({ id, alias, favorite, avatar }))
   };
 }
 
@@ -52,9 +53,13 @@ async function dispatch(message) {
   }
   if (command === "lock") {
     await lock();
-    return view({ exists: true }, allowed);
+    return view(await readVault(), allowed);
   }
   if (!vault.state) throw new VaultError("locked");
+  if (command === "setProtection") {
+    await setProtection(vault.state, message.phrase);
+    return view(await readVault(), allowed);
+  }
   if (!allowed) throw new VaultError("permission");
   if (command === "recover") {
     await recover(vault);
@@ -107,13 +112,19 @@ function checkAlias(alias) {
 
 async function saveAccount(vault, label) {
   const alias = checkAlias(label);
-  if ((await tiktokTabs()).length !== 1) throw new VaultError("save_tab");
+  const tabs = await tiktokTabs();
+  if (tabs.length !== 1) throw new VaultError("save_tab");
   const cookies = await readCookies();
   const identity = await fingerprint(cookies);
   if (!identity) throw new VaultError("sign_in");
   const { state } = vault;
   const existing = currentAccount(state, identity);
-  const account = { id: existing?.id ?? crypto.randomUUID(), alias, favorite: existing?.favorite ?? false, cookies, identity };
+  const avatar = await profilePhoto(tabs[0].id);
+  if (await fingerprint(await readCookies()) !== identity) throw new VaultError("unsaved");
+  const account = {
+    id: existing?.id ?? crypto.randomUUID(), alias, favorite: existing?.favorite ?? false,
+    cookies, identity, avatar: avatar ?? existing?.avatar ?? null
+  };
   const accounts = existing
     ? state.accounts.map((item) => item.id === account.id ? account : item)
     : [...state.accounts, account];

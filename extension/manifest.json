@@ -1,11 +1,14 @@
 {
   "manifest_version": 3,
   "name": "MultiTikTok",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "minimum_chrome_version": "130",
   "description": "Cambia entre tus sesiones de TikTok en Chrome.",
-  "permissions": ["storage", "cookies"],
+  "permissions": ["storage", "cookies", "scripting"],
   "optional_host_permissions": ["https://*.tiktok.com/*"],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; img-src 'self' https://*.tiktokcdn.com https://*.tiktokcdn-us.com https://*.tiktokcdn-eu.com"
+  },
   "background": { "service_worker": "worker.js", "type": "module" },
   "action": {
     "default_title": "MultiTikTok",
