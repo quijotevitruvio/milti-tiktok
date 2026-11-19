@@ -1,54 +1,41 @@
 # MultiTikTok
 
-Abre tus cuentas de TikTok desde un selector en Google Chrome. Cada cuenta usa un perfil de Chrome, así que puedes dejar abiertas varias sesiones a la vez. MultiTikTok es gratuito y funciona en **Windows x64 con Google Chrome de escritorio**.
+Extensión gratuita de Chrome de escritorio para alternar tus cuentas de TikTok web dentro del mismo perfil de Chrome. Se instala con los archivos de la extensión y funciona sin un componente de Windows. Esta versión está en beta.
 
-**[Descargar MultiTikTok para Windows x64](https://github.com/quijotevitruvio/milti-tiktok/releases/latest/download/MultiTikTok-Windows-x64.zip)** · [Ver versiones](https://github.com/quijotevitruvio/milti-tiktok/releases)
+**[Descargar MultiTikTok para Chrome](https://github.com/quijotevitruvio/milti-tiktok/releases/latest/download/MultiTikTok-Chrome.zip)** · [Ver versiones](https://github.com/quijotevitruvio/milti-tiktok/releases)
 
 ## Instalar paso a paso
 
-1. **Descarga y extrae el ZIP.** En la carpeta extraída encontrarás `extension`, `host` e `Install-Host.ps1`. Conserva esa carpeta para que Chrome pueda seguir cargando la extensión.
-2. **Carga la extensión.** Escribe `chrome://extensions` en la barra de direcciones de Chrome. Activa **Modo desarrollador**, pulsa **Cargar descomprimida** y selecciona la carpeta `extension` que acabas de extraer.
-3. **Copia el ID.** Busca la tarjeta de **MultiTikTok** en esa página y copia su ID de 32 letras.
-4. **Instala el componente de Windows.** Abre PowerShell en la carpeta extraída y ejecuta el comando. Sustituye `TU_ID_DE_CHROME` por el ID que copiaste. El componente conecta el selector con los perfiles de Chrome y se instala para tu usuario de Windows.
-
-   ```powershell
-   powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Install-Host.ps1 -ExtensionId TU_ID_DE_CHROME
-   ```
-
-5. **Abre MultiTikTok.** Pulsa el icono de extensiones de Chrome y selecciona **MultiTikTok**. Puedes fijarla a la barra. Si el selector ya estaba abierto, pulsa **Actualizar**.
+1. **Descarga y extrae** `MultiTikTok-Chrome.zip`. Abre la carpeta que contiene `manifest.json`.
+2. En Chrome, escribe `chrome://extensions` en la barra de direcciones y activa **Modo desarrollador**.
+3. Pulsa **Cargar descomprimida** y selecciona la carpeta extraída. Conserva la carpeta mientras uses la extensión.
+4. Abre **MultiTikTok** desde el menú de extensiones. Pulsa **Permitir acceso a TikTok** y confirma el permiso en Chrome.
+5. Crea una frase de acceso de al menos 12 caracteres. Se usa para cifrar las sesiones guardadas en tu equipo. Chrome te la volverá a pedir al reiniciar el navegador o al pulsar **Bloquear**.
 
 ## Agregar cuentas y cambiar entre ellas
 
-1. Desde el menú de perfiles de Chrome, crea un perfil por cada cuenta de TikTok. Puedes nombrarlos **Personal**, **Tienda** o como prefieras. Puedes usar perfiles locales de Chrome sin vincular una cuenta de Google.
-2. Vuelve a la ventana de Chrome donde instalaste MultiTikTok. Abre el popup y pulsa **Actualizar** si acabas de crear un perfil.
-3. Selecciona un perfil, escribe un alias y pulsa **Vincular perfil**. Repite para las demás cuentas.
-4. Pulsa **Abrir** junto al alias. Chrome abrirá TikTok en ese perfil. Si TikTok pide iniciar sesión, hazlo directamente en su página y comprueba el `@usuario` antes de publicar o responder mensajes.
-5. Para cambiar de cuenta, vuelve al popup de MultiTikTok y pulsa **Abrir** junto a otro alias. **Volver a la anterior** abre el perfil usado antes del actual. El botón **⋯** permite cambiar el alias, fijarlo como favorito o desvincular el perfil.
+1. Abre TikTok en una sola pestaña, inicia sesión y comprueba el `@usuario`.
+2. Abre MultiTikTok, escribe un alias como **Personal** y pulsa **Guardar sesión**.
+3. Pulsa **Iniciar sesión en otra cuenta**. Guarda antes cualquier trabajo en TikTok y cierra sus otras pestañas, también las de otras ventanas. Confirma con **Continuar**.
+4. Inicia sesión en TikTok con tu segunda cuenta y guárdala con otro alias. Repite para las demás cuentas.
+5. Selecciona una cuenta guardada y confirma el cambio. Chrome abrirá TikTok con las cookies guardadas de esa cuenta. Comprueba allí el `@usuario` antes de publicar o contestar mensajes.
 
-Si un perfil aparece como **no disponible**, comprueba que aún exista en Chrome y pulsa **Actualizar**. Al desvincular un perfil, tu sesión de TikTok sigue en Chrome. Si la sesión vence, vuelve a iniciar sesión en TikTok desde ese perfil.
+**Volver a la anterior** aplica la sesión que usabas antes. Desde **⋯** puedes editar el alias, marcar una favorita o borrar su copia de la extensión. La opción **Bloquear** protege el selector y las copias guardadas. Para cerrar tu sesión activa, usa TikTok.
+
+Si TikTok cierra una sesión o pide verificación, vuelve a iniciar sesión en el sitio y guarda la sesión de nuevo. Si el selector indica una interrupción, cierra otras pestañas de TikTok y elige **Restaurar sesión**. Si olvidas la frase, quitar y volver a instalar la extensión permite empezar con una lista nueva.
+
+## Qué puedes esperar de esta beta
+
+- Usa Chrome de escritorio 130 o posterior en un perfil normal. Las pestañas de TikTok del mismo perfil comparten una sola sesión activa.
+- El cambio usa cookies de TikTok. Si el sitio modifica su inicio de sesión o deja de aceptar una sesión guardada, inicia sesión de nuevo directamente en TikTok.
+- Probamos la rotación y la recuperación con sesiones simuladas. Aún falta validar la compatibilidad con cuentas reales, regiones y métodos de inicio de sesión de TikTok.
 
 ## Estrella en GitHub
 
-La extensión está disponible desde que la instalas. Tras la primera apertura, el selector puede mostrar **Dar una estrella** y **Ahora no**. La estrella es voluntaria y el botón abre la página del proyecto en GitHub.
-
-## Desinstalar
-
-Quita MultiTikTok desde `chrome://extensions`. Para retirar el registro del componente de Windows, abre PowerShell en la carpeta extraída y ejecuta:
-
-```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Install-Host.ps1 -Uninstall
-```
-
-Puedes eliminar la carpeta `MultiTikTok` de `%LOCALAPPDATA%` después de retirar el registro. Tus perfiles y sesiones siguen en Chrome.
+La extensión está disponible desde la instalación. Después del primer cambio entre cuentas guardadas puede aparecer **Dar una estrella**. El enlace abre GitHub y puedes omitirlo con **Ahora no**.
 
 ## Compilar desde el código fuente
 
-En Windows x64, con el SDK de .NET 8 o posterior, ejecuta:
-
-```powershell
-.\scripts\Build.ps1
-```
-
-El paquete instalable y el ZIP de la extensión se generan en `dist`. Para instalar desde esta carpeta de código fuente, carga `extension` en Chrome y usa `scripts\Install-Host.ps1` en el paso de instalación del componente.
+Carga la carpeta `extension` como extensión descomprimida. Para crear el ZIP, ejecuta `python scripts/build.py` desde la raíz del proyecto. El archivo resultante queda en `dist`.
 
 [Privacidad y permisos](PRIVACIDAD.md) · [Licencia MIT](LICENSE)

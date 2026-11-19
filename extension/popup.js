@@ -1,176 +1,157 @@
-import { askHost, describeError } from "./native.js";
+import { hostPermission } from "./sessions.js";
 
 const ui = Object.fromEntries(
   Array.from(document.querySelectorAll("[id]"), (element) => [element.id, element])
 );
 const collator = new Intl.Collator("es", { sensitivity: "base" });
+const messages = {
+  alias: "Escribe un alias de hasta 48 caracteres.",
+  busy: "Hay una operación en curso. Si el selector se cierra, vuelve a abrirlo.",
+  expired: "La sesión guardada venció. Inicia sesión en TikTok y vuelve a guardarla.",
+  locked: "Desbloquea las sesiones con tu frase de acceso.",
+  multiple_tabs: "Cierra las otras pestañas de TikTok, incluidas las de otras ventanas de este perfil.",
+  park_failed: "Chrome no pudo preparar la pestaña. Guarda tu trabajo y vuelve a intentarlo.",
+  permission: "Permite el acceso a TikTok para continuar.",
+  phrase_length: "Escribe una frase de acceso de entre 12 y 256 caracteres.",
+  recovery: "El cambio se interrumpió. Restaura la sesión anterior para continuar.",
+  restored: "El cambio falló y se restauró la sesión anterior.",
+  save_tab: "Deja una sola pestaña de TikTok abierta para guardar la sesión.",
+  sign_in: "No se detectó una sesión compatible. Inicia sesión en TikTok y comprueba tu @usuario.",
+  storage: "Chrome no pudo guardar las sesiones. El cambio quedó sin aplicar.",
+  unknown_account: "La cuenta ya no está guardada.",
+  unsaved: "Guarda la sesión abierta o ciérrala desde TikTok antes de cambiar.",
+  wrong_phrase: "Comprueba tu frase de acceso e inténtalo de nuevo.",
+  unexpected: "La acción quedó sin completar. Cierra y vuelve a abrir el selector."
+};
 
-let accounts = [];
-let profiles = [];
-let history = {};
-let hostReady = false;
+let model = {};
 let editingId;
+let action;
 let busy = false;
 
-function announce(message, error = false) {
-  ui.status.textContent = message;
+function announce(text, error = false) {
+  ui.status.textContent = text;
   ui.status.dataset.error = String(error);
 }
 
 function render() {
-  const profilesById = new Map(profiles.map((profile) => [profile.id, profile]));
+  const { allowed, unlocked, exists, accounts = [], recovery, active, previous, invite } = model;
+  ui.permission.hidden = allowed !== false;
+  ui.unlock.hidden = !allowed || unlocked;
+  ui.lock.hidden = !unlocked;
+  ui.manager.hidden = !allowed || !unlocked || recovery;
+  ui.recovery.hidden = !allowed || !recovery;
+  ui.invite.hidden = !allowed || !invite || recovery;
+  ui.add.hidden = !accounts.length;
+  ui.previous.hidden = !accounts.some((account) => account.id === previous && account.id !== active);
+  ui["phrase-label"].textContent = exists ? "Frase de acceso" : "Crea una frase de acceso";
+  ui["phrase-help"].textContent = exists
+    ? "Úsala para acceder a las sesiones guardadas."
+    : "Usa al menos 12 caracteres. Consérvala para recuperar tus sesiones cuando reinicies Chrome.";
+  ui.phrase.autocomplete = exists ? "current-password" : "new-password";
+  ui["unlock-submit"].textContent = exists ? "Desbloquear sesiones" : "Crear";
+
   const ordered = [...accounts].sort((first, second) =>
     Number(second.favorite) - Number(first.favorite) || collator.compare(first.alias, second.alias)
   );
   const rows = ordered.map((account) => {
     const row = ui["account-row"].content.cloneNode(true);
-    const available = profilesById.has(account.id);
-    const detail = [];
-    if (account.favorite) detail.push("Favorita");
-    if (!available && hostReady) detail.push("Perfil no disponible");
-    if (account.id === history.last) detail.push("Última abierta");
-    if (available) detail.push(profilesById.get(account.id).name);
-
     row.querySelector(".name").textContent = account.alias;
     row.querySelector(".avatar").textContent = Array.from(account.alias)[0].toLocaleUpperCase("es");
+    const detail = [];
+    if (account.favorite) detail.push("Favorita");
+    if (account.id === active) detail.push("Sesión detectada");
     row.querySelector(".detail").textContent = detail.join(" · ");
     const open = row.querySelector(".account");
-    open.dataset.accountId = account.id;
-    open.disabled = busy || !available;
-    open.setAttribute("aria-label", `Abrir ${account.alias}`);
-    open.addEventListener("click", () => run(() => openProfile(account)));
+    open.setAttribute("aria-label", `Cambiar a ${account.alias}`);
+    open.addEventListener("click", () => confirmChange("switch", account.id));
     const more = row.querySelector(".more");
-    more.dataset.accountId = account.id;
-    more.disabled = busy;
     more.setAttribute("aria-label", `Editar ${account.alias}`);
-    more.addEventListener("click", () => editAccount(account));
+    more.addEventListener("click", () => {
+      editingId = account.id;
+      ui["edit-alias"].value = account.alias;
+      ui.favorite.checked = account.favorite;
+      ui.edit.showModal();
+    });
     return row;
   });
   ui.accounts.replaceChildren(...rows);
-
-  const selected = ui.profile.value;
-  const linked = new Set(accounts.map((account) => account.id));
-  const unlinked = profiles.filter((profile) => !linked.has(profile.id));
-  ui.profile.replaceChildren(...unlinked.map((profile) => new Option(profile.name, profile.id)));
-  if (unlinked.some((profile) => profile.id === selected)) ui.profile.value = selected;
-  ui.add.hidden = !hostReady || unlinked.length === 0;
-  ui.help.hidden = !hostReady || unlinked.length > 0;
-  ui.help.textContent = "Crea otro perfil desde el menú de Chrome y pulsa Actualizar.";
-
-  ui.previous.hidden = !linked.has(history.previous) || !profilesById.has(history.previous);
-  ui.previous.disabled = busy;
-  ui.refresh.disabled = busy;
-  for (const control of ui.add.elements) control.disabled = busy;
 }
 
-async function run(operation) {
+function confirmChange(command, id) {
+  action = { command, id };
+  ui["confirm-title"].textContent = command === "add" ? "Iniciar sesión en otra cuenta" : "Cambiar sesión";
+  ui.confirm.showModal();
+}
+
+async function run(request, success) {
   if (busy) return;
-  const trigger = document.activeElement;
   busy = true;
-  render();
+  document.querySelector("main").inert = true;
+  announce("Un momento…");
   try {
-    await operation();
+    const result = await request();
+    if (result.error) {
+      announce(messages[result.error] ?? messages.unexpected, true);
+      if (result.error === "recovery") model = await chrome.runtime.sendMessage({ command: "view" });
+    } else if (result.destination) {
+      announce(result.destination.opened ? "Comprueba tu @usuario en TikTok." : "Abre TikTok para continuar.");
+      model = await chrome.runtime.sendMessage({ command: "view" });
+    } else {
+      model = result;
+      announce(success ?? "");
+    }
   } catch {
-    announce("No se pudo completar la acción. Vuelve a intentarlo.", true);
+    announce(messages.unexpected, true);
   } finally {
+    document.querySelector("main").inert = false;
     busy = false;
     render();
-    if (document.activeElement === document.body && trigger instanceof HTMLElement) {
-      const replacement = trigger.isConnected ? trigger : Array.from(ui.accounts.querySelectorAll("button"))
-        .find((button) => button.className === trigger.className &&
-          button.dataset.accountId === trigger.dataset.accountId);
-      if (replacement && !replacement.disabled && replacement.getClientRects().length) {
-        replacement.focus();
-      }
-    }
   }
 }
 
-async function refreshProfiles() {
-  announce("Buscando perfiles de Chrome…");
-  const result = await askHost({ command: "listProfiles" });
-  hostReady = result.ok;
-  profiles = result.ok ? result.profiles : [];
-  announce(result.ok ? "" : describeError(result.error), !result.ok);
+function send(command, fields = {}, success) {
+  return run(() => chrome.runtime.sendMessage({ command, ...fields }), success);
 }
 
-async function saveAccounts(next) {
-  await chrome.storage.local.set({ accounts: next });
-  accounts = next;
-}
-
-async function openProfile(account) {
-  if (!account) return;
-  announce(`Abriendo ${account.alias}…`);
-  const result = await chrome.runtime.sendMessage({ type: "openProfile", id: account.id });
-  if (!result.ok) {
-    announce(describeError(result.error), true);
-    return;
-  }
-  ({ history = {} } = await chrome.storage.local.get("history"));
-  announce(`Chrome recibió la solicitud para abrir ${account.alias}.`);
-}
-
-function editAccount(account) {
-  editingId = account.id;
-  ui["edit-alias"].value = account.alias;
-  ui["edit-alias"].setCustomValidity("");
-  ui.favorite.checked = account.favorite;
-  ui.edit.showModal();
-}
-
-ui.refresh.addEventListener("click", () => run(refreshProfiles));
-ui.previous.addEventListener("click", () =>
-  run(() => openProfile(accounts.find((account) => account.id === history.previous)))
-);
-ui.add.addEventListener("submit", (event) => {
+ui.allow.addEventListener("click", () => run(async () => {
+  const allowed = await chrome.permissions.request({ origins: [hostPermission] });
+  if (!allowed) return { error: "permission" };
+  return chrome.runtime.sendMessage({ command: "view" });
+}));
+ui.unlock.addEventListener("submit", (event) => {
   event.preventDefault();
-  const profile = profiles.find((item) => item.id === ui.profile.value);
-  if (!profile || accounts.some((account) => account.id === profile.id)) return;
-  const alias = ui.alias.value.trim() || profile.name.slice(0, 48);
-  run(async () => {
-    await saveAccounts([...accounts, { id: profile.id, alias, favorite: false }]);
-    ui.alias.value = "";
-    announce(`${alias} quedó vinculada. Ábrela para iniciar sesión en TikTok.`);
-  });
+  const phrase = ui.phrase.value;
+  ui.phrase.value = "";
+  send("unlock", { phrase });
+});
+ui.lock.addEventListener("click", () => send("lock"));
+ui.restore.addEventListener("click", () => send("recover", {}, "Sesión anterior restaurada."));
+ui.save.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const alias = ui.alias.value;
+  send("save", { alias }, "Sesión guardada.");
+});
+ui.add.addEventListener("click", () => confirmChange("add"));
+ui.previous.addEventListener("click", () => confirmChange("switch", model.previous));
+ui["cancel-change"].addEventListener("click", () => ui.confirm.close());
+ui["confirm-form"].addEventListener("submit", (event) => {
+  event.preventDefault();
+  ui.confirm.close();
+  send(action.command, { id: action.id });
 });
 ui["edit-form"].addEventListener("submit", (event) => {
   event.preventDefault();
-  const alias = ui["edit-alias"].value.trim();
-  if (!alias) {
-    ui["edit-alias"].setCustomValidity("Escribe un alias.");
-    ui["edit-alias"].reportValidity();
-    return;
-  }
-  const favorite = ui.favorite.checked;
   ui.edit.close();
-  run(async () => {
-    await saveAccounts(accounts.map((account) =>
-      account.id === editingId ? { ...account, alias, favorite } : account
-    ));
-    announce("Cambios guardados.");
-  });
+  send("edit", { id: editingId, alias: ui["edit-alias"].value, favorite: ui.favorite.checked }, "Cambios guardados.");
 });
-ui["edit-alias"].addEventListener("input", () => ui["edit-alias"].setCustomValidity(""));
 ui.cancel.addEventListener("click", () => ui.edit.close());
 ui.unlink.addEventListener("click", () => {
   ui.edit.close();
-  run(async () => {
-    await saveAccounts(accounts.filter((account) => account.id !== editingId));
-    announce("Cuenta desvinculada. La sesión de TikTok sigue en el perfil de Chrome.");
-  });
+  send("forget", { id: editingId }, "Se borró la copia guardada.");
 });
 for (const id of ["dismiss", "star"]) {
-  ui[id].addEventListener("click", () => { ui.invite.hidden = true; });
+  ui[id].addEventListener("click", () => { send("dismiss"); });
 }
 
-run(async () => {
-  const saved = await chrome.storage.local.get(["accounts", "history", "invite"]);
-  accounts = saved.accounts ?? [];
-  history = saved.history ?? {};
-  if (saved.invite === "pending") {
-    await chrome.storage.local.set({ invite: "shown" });
-    ui.invite.hidden = false;
-  }
-  await refreshProfiles();
-});
+send("view");

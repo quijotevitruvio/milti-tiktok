@@ -42,7 +42,10 @@ li { display: flex; align-items: center; gap: 5px; border-top: 1px solid var(--l
 .open-label { font-weight: 650; color: var(--violet); }
 .more { font-size: 21px; width: 34px; }
 form { display: grid; gap: 7px; }
-#add { border-top: 1px solid var(--line); margin-top: 12px; padding-top: 12px; }
+#save { border-top: 1px solid var(--line); margin-top: 12px; padding-top: 12px; }
+#permission, #unlock, #recovery { margin-top: 8px; }
+#permission button, #recovery button { display: block; margin-top: 10px; }
+#status:not(:empty) { margin-bottom: 10px; }
 label { font-weight: 650; }
 input:not([type="checkbox"]), select { width: 100%; border: 1px solid var(--line); background: white; color: var(--ink); border-radius: 7px; padding: 7px 8px; }
 .primary { background: var(--violet); color: white; border: 0; border-radius: 7px; padding: 8px 12px; min-height: 36px; font-weight: 700; }

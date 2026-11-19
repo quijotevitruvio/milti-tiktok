@@ -11,23 +11,39 @@
   <header>
     <img src="icon.png" alt="" width="36" height="36">
     <h1>MultiTikTok</h1>
-    <button id="refresh" class="quiet" type="button">Actualizar</button>
+    <button id="lock" class="quiet" type="button" hidden>Bloquear</button>
   </header>
   <main>
-    <div class="list-heading">
+    <p id="status" role="status"></p>
+    <section id="permission" hidden>
+      <p>MultiTikTok necesita acceso a TikTok para guardar y cambiar tus sesiones.</p>
+      <button id="allow" class="primary" type="button">Permitir acceso a TikTok</button>
+    </section>
+    <form id="unlock" hidden>
+      <label id="phrase-label" for="phrase">Frase de acceso</label>
+      <input id="phrase" type="password" minlength="12" maxlength="256" required>
+      <p id="phrase-help" class="help"></p>
+      <button id="unlock-submit" class="primary" type="submit">Desbloquear</button>
+    </form>
+    <p id="recovery" hidden>El último cambio se interrumpió. Restaura la sesión anterior para continuar.
+      <button id="restore" class="primary" type="button">Restaurar sesión</button>
+    </p>
+    <div id="manager" hidden>
+     <div class="list-heading">
       <h2 id="accounts-title">Tus cuentas</h2>
       <button id="previous" class="quiet" type="button" hidden>Volver a la anterior</button>
+     </div>
+     <ul id="accounts" aria-labelledby="accounts-title"></ul>
+     <form id="save">
+       <label for="alias">Alias de la cuenta abierta</label>
+       <input id="alias" placeholder="Ej. Personal o @usuario" maxlength="48" required>
+       <div class="dialog-actions">
+         <a href="https://www.tiktok.com/" target="_blank" rel="noopener noreferrer">Ir a TikTok</a>
+         <button class="primary" type="submit">Guardar sesión</button>
+       </div>
+     </form>
+     <button id="add" class="quiet" type="button" hidden>Iniciar sesión en otra cuenta</button>
     </div>
-    <p id="status" role="status"></p>
-    <ul id="accounts" aria-labelledby="accounts-title"></ul>
-    <form id="add" hidden>
-      <label for="profile">Perfil de Chrome</label>
-      <select id="profile" required></select>
-      <label for="alias">Alias</label>
-      <input id="alias" placeholder="Ej. Personal o @usuario" maxlength="48">
-      <button class="primary" type="submit">Vincular perfil</button>
-    </form>
-    <p id="help" class="help" hidden></p>
     <aside id="invite" aria-label="Apoyar el proyecto" hidden>
       <p>¿Te sirvió MultiTikTok?</p>
       <div>
@@ -43,9 +59,19 @@
       <input id="edit-alias" maxlength="48" required>
       <label class="check"><input id="favorite" type="checkbox"> Fijar como favorita</label>
       <div class="dialog-actions">
-        <button id="unlink" class="danger" type="button">Desvincular</button>
+      <button id="unlink" class="danger" type="button">Borrar copia</button>
         <button id="cancel" class="quiet" type="button">Cancelar</button>
         <button class="primary" type="submit">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+  <dialog id="confirm" aria-labelledby="confirm-title">
+    <form id="confirm-form">
+      <h2 id="confirm-title">Cambiar sesión</h2>
+      <p>Guarda lo que estés haciendo y deja abierta solo una pestaña de TikTok. Después del cambio, comprueba tu @usuario en TikTok.</p>
+      <div class="dialog-actions">
+        <button id="cancel-change" class="quiet" type="button">Cancelar</button>
+        <button class="primary" type="submit">Continuar</button>
       </div>
     </form>
   </dialog>
@@ -57,7 +83,7 @@
           <strong class="name"></strong>
           <span class="detail"></span>
         </span>
-        <span class="open-label">Abrir</span>
+        <span class="open-label">Cambiar</span>
       </button>
       <button type="button" class="more" aria-label="Editar cuenta">⋯</button>
     </li>
