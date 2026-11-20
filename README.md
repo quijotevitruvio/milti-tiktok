@@ -20,7 +20,7 @@ La actualización automática estará disponible para las instalaciones desde Ch
 1. Abre MultiTikTok, concede acceso a TikTok y elige **Agregar cuenta**. Si ya tienes una sesión abierta, puedes guardarla primero.
 2. Inicia sesión en la página de TikTok. Cuando el selector detecte que la sesión está lista, escribe un alias como **Personal** y guárdala. El panel lateral permite tener las instrucciones a la vista.
 3. Repite **Agregar cuenta** para la siguiente. Guarda antes cualquier trabajo y deja una sola pestaña de TikTok abierta. Si hay varias, el selector te ayuda a encontrarlas.
-4. Elige una cuenta guardada. La pantalla oscura indica que MultiTikTok está cambiando la sesión. Si estabas en una vista compatible, la extensión vuelve a abrirla sin conservar los parámetros ni el fragmento de la URL.
+4. Elige una cuenta guardada. La pantalla de transición muestra el progreso. MultiTikTok abre la última página compatible que recuerda para la cuenta de destino, con una URL sin parámetros ni fragmento. Si aún no hay una página guardada, abre el inicio de TikTok.
 5. Comprueba el `@usuario` en TikTok antes de publicar o contestar mensajes. El selector muestra el usuario y la foto cuando puede detectarlos desde la página.
 
 **Volver a la anterior** aplica la sesión que usabas antes. Puedes buscar por alias o por `@usuario`. Desde **⋯** puedes cambiar el alias y el color, marcar una favorita, ajustar su lugar en la lista o borrar su copia. Al guardar de nuevo una cuenta, el selector actualiza su foto cuando está disponible.
@@ -28,6 +28,17 @@ La actualización automática estará disponible para las instalaciones desde Ch
 Si la sesión vence, usa **Reconectar** en la cuenta guardada. MultiTikTok conserva el alias y las preferencias cuando reconoce la misma cuenta. Si el selector indica una interrupción, cierra otras pestañas de TikTok y elige **Restaurar sesión**. Para cerrar por completo tu sesión activa, usa TikTok.
 
 Desde **Configuración** puedes activar el **modo rápido**. Las comprobaciones de pestañas y sesiones sin guardar siguen aplicándose. Puedes configurar los atajos para abrir el selector o volver a la cuenta anterior desde `chrome://extensions/shortcuts`.
+
+### Organizar y cambiar cuentas
+
+- Usa el alias sugerido al guardar una sesión. Cuando el selector reconoce que la cuenta ya está guardada, actualiza esa copia y conserva su organización.
+- Revisa el origen y el destino antes de confirmar un cambio. La extensión muestra el `@usuario` después del cambio cuando puede comprobarlo. Si la cuenta que aparece es diferente o sigue por confirmar, revisa TikTok antes de publicar.
+- Usa **Editar cuenta** para asignar grupo, color, nota privada y confirmación individual. Puedes archivar una cuenta y restaurarla desde el filtro de archivadas.
+- Desde **Configuración** puedes ordenar por uso reciente, cambiar densidad o contraste, elegir español, inglés o portugués y asignar el atajo a una favorita.
+- Los accesos de cada cuenta abren su perfil, la pantalla de subida o Studio. MultiTikTok puede recordar la última página compatible de cada cuenta y permite volver a la anterior tras un cambio.
+- Usa **Datos locales** para revisar o limpiar el historial de cambios, revisar copias antiguas y exportar o importar la organización. El archivo incluye alias, colores, grupos, favoritos, orden, estado de archivo y preferencias de confirmación por cuenta. Las cuentas importadas requieren iniciar sesión para usarlas.
+
+Puedes probar el selector con cuentas ficticias desde **Probar la demo** antes de dar acceso a TikTok.
 
 ## Frase de acceso opcional
 
@@ -45,7 +56,7 @@ Si activas la frase, puedes elegir un tiempo de inactividad para bloquear el sel
 
 ## Apoyar el proyecto
 
-En el selector, **Dar estrella** abre el [repositorio de MultiTikTok](https://github.com/quijotevitruvio/milti-tiktok), **Cafecito** abre [PayPal](https://paypal.me/bibliotecologo) y **Sígueme** muestra los perfiles de [GitHub](https://github.com/quijotevitruvio) y [LinkedIn](https://www.linkedin.com/in/andr%C3%A9s-valencia-tob%C3%B3n/). Después del primer cambio puede aparecer una invitación que puedes omitir con **Ahora no**. El apoyo es voluntario y la extensión está disponible desde la instalación.
+En el selector, **Estrella** abre el [repositorio de MultiTikTok](https://github.com/quijotevitruvio/milti-tiktok), **Cafecito** abre [PayPal](https://paypal.me/bibliotecologo) y **Sígueme** muestra los perfiles de [GitHub](https://github.com/quijotevitruvio) y [LinkedIn](https://www.linkedin.com/in/andr%C3%A9s-valencia-tob%C3%B3n/). Después del primer cambio puede aparecer una invitación que puedes omitir con **Ahora no**. El apoyo es voluntario y la extensión está disponible desde la instalación.
 
 Desde **Reportar un problema** puedes abrir un borrador en GitHub con la versión de MultiTikTok y, si existe, un código de error. Los datos de las cuentas quedan en la extensión.
 

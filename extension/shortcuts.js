@@ -1,10 +1,15 @@
-export function registerShortcuts({ openPrevious }) {
+export function registerShortcuts({ openPrevious, openFavorite }) {
+  const shortcuts = {
+    "open-previous-account": openPrevious,
+    "open-favorite-account": openFavorite
+  };
   chrome.commands.onCommand.addListener(async (command) => {
-    if (command !== "open-previous-account") return;
+    const action = Object.hasOwn(shortcuts, command) ? shortcuts[command] : null;
+    if (!action) return;
     try {
-      await openPrevious();
+      await action();
     } catch {
-      console.warn("No se pudo abrir la cuenta anterior desde el atajo.");
+      console.warn("No se pudo abrir la cuenta de TikTok desde el atajo.");
     }
   });
 }

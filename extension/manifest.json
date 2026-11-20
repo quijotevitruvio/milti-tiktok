@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "MultiTikTok",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "minimum_chrome_version": "130",
   "description": "Cambia entre tus sesiones de TikTok en Chrome.",
   "permissions": ["storage", "cookies", "scripting", "sidePanel", "alarms"],
@@ -34,6 +34,10 @@
     "open-previous-account": {
       "suggested_key": { "default": "Alt+Shift+P" },
       "description": "Volver a la cuenta anterior de TikTok"
+    },
+    "open-favorite-account": {
+      "suggested_key": { "default": "Alt+Shift+F" },
+      "description": "Abrir la cuenta favorita elegida en MultiTikTok"
     }
   },
   "incognito": "not_allowed"

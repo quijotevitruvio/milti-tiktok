@@ -9,19 +9,26 @@
 </head>
 <body>
   <header>
-    <img src="icon.png" alt="" width="36" height="36">
+    <img src="icon.png" alt="" width="28" height="28">
     <h1>MultiTikTok</h1>
     <div class="header-actions">
-      <button id="open-panel" class="quiet" type="button" hidden>Panel lateral</button>
-      <button id="settings" class="quiet" type="button" hidden>Configuración</button>
+      <button id="open-panel" class="quiet icon-button" type="button" aria-label="Panel lateral" title="Panel lateral" hidden>
+        <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M15 5v14"/></svg>
+      </button>
+      <button id="settings" class="quiet icon-button" type="button" aria-label="Configuración" title="Configuración" hidden>
+        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/><circle cx="9" cy="7" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="11" cy="17" r="2"/></svg>
+      </button>
     </div>
   </header>
   <main>
-    <p id="status" role="status"></p>
+    <p id="status" role="status" tabindex="-1"></p>
     <section id="permission" class="notice" hidden>
-      <h2>Permite el acceso a TikTok</h2>
+      <h2 id="permission-title">Permite el acceso a TikTok</h2>
       <p>MultiTikTok necesita acceso a TikTok para guardar y cambiar tus sesiones en este perfil de Chrome.</p>
-      <button id="allow" class="primary" type="button">Permitir acceso a TikTok</button>
+      <div class="dialog-actions">
+        <button id="start-demo" class="quiet" type="button">Probar la demo</button>
+        <button id="allow" class="primary" type="button">Permitir acceso a TikTok</button>
+      </div>
     </section>
     <form id="unlock" hidden>
       <label for="phrase">Frase de acceso</label>
@@ -36,17 +43,38 @@
         <button id="restore" class="primary" type="button">Restaurar sesión</button>
       </div>
     </section>
+    <section id="demo-banner" class="notice slim-notice" hidden>
+      <p>Estás usando cuentas de ejemplo. Las acciones son simuladas.</p>
+      <button id="end-demo" class="quiet" type="button">Salir de la demo</button>
+    </section>
+    <section id="diagnostics" class="notice slim-notice" hidden aria-labelledby="diagnostic-title">
+      <h2 id="diagnostic-title">Qué revisar</h2>
+      <p id="diagnostic-message"></p>
+      <button id="diagnostic-action" class="quiet" type="button"></button>
+    </section>
     <div id="manager" hidden>
-      <section id="active-session" aria-labelledby="active-title">
+      <section id="active-session" aria-label="Sesión en TikTok" hidden>
         <span id="active-avatar" class="avatar" aria-hidden="true"></span>
         <div class="identity">
-          <h2 id="active-title">Sesión en TikTok</h2>
           <strong id="active-handle"></strong>
-          <span id="active-detail" class="detail"></span>
+          <span id="active-detail" class="detail" data-no-translate></span>
         </div>
       </section>
 
-      <details id="tabs">
+      <section id="verification" class="notice slim-notice" role="status" hidden>
+        <p id="verification-message"></p>
+        <div class="inline-actions">
+          <button id="check-profile" class="quiet" type="button" hidden>Ver en TikTok</button>
+          <button id="undo" class="quiet" type="button" hidden>Deshacer cambio</button>
+        </div>
+      </section>
+      <section id="whats-new" class="notice slim-notice" hidden aria-labelledby="whats-new-title">
+        <h2 id="whats-new-title">Novedades de MultiTikTok</h2>
+        <p>Comprueba el @usuario tras cambiar, agrupa tus cuentas y accede rápido a Perfil, Subir video y TikTok Studio.</p>
+        <button id="dismiss-news" class="quiet" type="button">Entendido</button>
+      </section>
+
+      <details id="tabs" hidden>
         <summary id="tabs-summary"></summary>
         <ul id="tab-list" aria-label="Pestañas abiertas de TikTok"></ul>
         <p id="tab-hint" class="help" hidden>Para cambiar o guardar, deja abierta una sola pestaña de TikTok. Guarda tu trabajo antes de cerrar las demás.</p>
@@ -72,12 +100,13 @@
       </section>
 
       <form id="save" hidden>
-        <label for="alias">Alias de la sesión</label>
-        <input id="alias" placeholder="Ej. Personal o @usuario" maxlength="48" required>
-        <div class="dialog-actions">
-          <a id="open-tiktok" href="https://www.tiktok.com/" target="_blank" rel="noopener noreferrer">Ir a TikTok</a>
-          <button id="save-session" class="primary" type="submit">Guardar sesión</button>
-        </div>
+        <label for="alias">Ponle un nombre a esta cuenta</label>
+        <input id="alias" placeholder="Ej. Personal o Tienda" maxlength="48" required>
+        <button id="suggest-alias" class="quiet" type="button" hidden></button>
+        <button id="save-session" class="primary" type="submit">Guardar sesión</button>
+        <p id="save-help" class="help" hidden>Abre la página de inicio de TikTok en esa pestaña para continuar.
+          <button id="focus-save-tab" class="quiet" type="button">Volver a TikTok</button>
+        </p>
       </form>
 
       <section id="account-manager" hidden aria-labelledby="accounts-title">
@@ -87,24 +116,36 @@
         </div>
         <label for="search" class="visually-hidden">Buscar por alias o @usuario</label>
         <input id="search" type="search" placeholder="Buscar por alias o @usuario">
+        <div class="filters">
+          <label for="account-filter" class="visually-hidden">Filtrar cuentas</label>
+          <select id="account-filter">
+            <option value="visible">Cuentas sin archivar</option>
+            <option value="favorites">Favoritas</option>
+            <option value="reconnect">Por reconectar</option>
+            <option value="archived">Archivadas</option>
+          </select>
+          <label for="group-filter" class="visually-hidden">Filtrar por grupo</label>
+          <select id="group-filter" hidden><option value="">Todos los grupos</option></select>
+        </div>
         <p id="no-results" class="help" role="status" hidden>No hay cuentas que coincidan.</p>
-        <ul id="accounts" aria-labelledby="accounts-title"></ul>
+        <div id="accounts" aria-labelledby="accounts-title"></div>
       </section>
 
       <button id="add" class="primary" type="button" hidden>Agregar cuenta</button>
     </div>
-    <section class="support" aria-label="Apoyar el proyecto">
-      <aside id="invite" class="support-invite" hidden>
-        <p id="invite-message">¿Te sirvió MultiTikTok? Una estrella ayuda a que más personas lo encuentren.</p>
-        <button id="dismiss" class="quiet" type="button">Ahora no</button>
-      </aside>
+    <aside id="invite" class="support-invite" hidden>
+      <p id="invite-message">¿Te sirvió MultiTikTok? Una estrella ayuda a que más personas lo encuentren.</p>
+      <button id="dismiss" class="quiet" type="button">Ahora no</button>
+    </aside>
+  </main>
+  <footer id="support-area" class="support" aria-label="Apoyar el proyecto">
       <div class="support-actions">
         <a id="star" href="https://github.com/quijotevitruvio/milti-tiktok" target="_blank" rel="noopener noreferrer"
           aria-label="Dar una estrella en GitHub">
           <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" fill="currentColor">
             <path d="M6.766 11.328c-2.063-.25-3.516-1.734-3.516-3.656 0-.781.281-1.625.75-2.188-.203-.515-.172-1.609.063-2.062.625-.078 1.468.25 1.968.703.594-.187 1.219-.281 1.985-.281.765 0 1.39.094 1.953.265.484-.437 1.344-.765 1.969-.687.218.422.25 1.515.046 2.047.5.593.766 1.39.766 2.203 0 1.922-1.453 3.375-3.547 3.64.531.344.89 1.094.89 1.954v1.625c0 .468.391.734.86.547C13.781 14.359 16 11.53 16 8.03 16 3.61 12.406 0 7.984 0 3.563 0 0 3.61 0 8.031a7.88 7.88 0 0 0 5.172 7.422c.422.156.828-.125.828-.547v-1.25c-.219.094-.5.156-.75.156-1.031 0-1.64-.562-2.078-1.609-.172-.422-.36-.672-.719-.719-.187-.015-.25-.093-.25-.187 0-.188.313-.328.625-.328.453 0 .844.281 1.25.86.313.452.64.655 1.031.655s.641-.14 1-.5c.266-.265.47-.5.657-.656"/>
           </svg>
-          Dar estrella
+          Estrella
         </a>
         <a id="coffee" href="https://paypal.me/bibliotecologo" target="_blank" rel="noopener noreferrer"
           aria-label="Invítame a un cafecito por PayPal">
@@ -115,8 +156,7 @@
         </a>
         <button id="support" type="button" aria-haspopup="dialog">Sígueme</button>
       </div>
-    </section>
-  </main>
+  </footer>
   <dialog id="support-dialog" aria-labelledby="support-title">
     <form method="dialog">
       <h2 id="support-title">Sígueme en redes</h2>
@@ -145,6 +185,27 @@
         <option value="60">1 hora</option>
       </select>
       <p id="auto-lock-help" class="help">Requiere una frase de acceso.</p>
+      <div class="settings-fields">
+        <label for="display-density">Densidad</label>
+        <select id="display-density">
+          <option value="comfortable">Cómoda</option>
+          <option value="compact">Compacta</option>
+        </select>
+        <label for="sort-accounts">Orden</label>
+        <select id="sort-accounts">
+          <option value="manual">Manual</option>
+          <option value="recent">Uso reciente</option>
+        </select>
+        <label for="locale">Idioma</label>
+        <select id="locale">
+          <option value="es" lang="es" data-no-translate>Español</option>
+          <option value="en" lang="en" data-no-translate>English</option>
+          <option value="pt" lang="pt" data-no-translate>Português</option>
+        </select>
+      </div>
+      <label class="check"><input id="high-contrast" type="checkbox"> Alto contraste</label>
+      <label for="favorite-shortcut">Cuenta favorita para el atajo</label>
+      <select id="favorite-shortcut"></select>
       <div class="dialog-actions">
         <button id="lock" class="quiet" type="button" hidden>Bloquear</button>
         <button id="close-settings" class="quiet" type="button">Cerrar</button>
@@ -152,8 +213,40 @@
       </div>
       <ul id="shortcuts" aria-label="Atajos de teclado" hidden></ul>
       <div class="settings-tools">
+        <button id="manage-data" class="quiet" type="button">Datos locales</button>
         <a id="report" href="#" target="_blank" rel="noopener noreferrer">Reportar problema</a>
         <button id="wipe" class="danger" type="button">Borrar todas las copias</button>
+      </div>
+    </form>
+  </dialog>
+  <dialog id="data-dialog" aria-labelledby="data-title">
+    <form method="dialog">
+      <h2 id="data-title">Datos locales</h2>
+      <p id="data-status" class="help" role="status" hidden></p>
+      <details id="history">
+        <summary>Historial de cambios</summary>
+        <p id="history-empty" class="help">Aún no hay cambios registrados.</p>
+        <ul id="history-list"></ul>
+        <button id="clear-history" class="danger" type="button">Limpiar historial</button>
+      </details>
+      <details>
+        <summary>Copia de organización</summary>
+        <p class="help">Incluye alias, grupos, colores, favoritos y preferencias por cuenta. Tus sesiones y notas privadas quedan en Chrome.</p>
+        <div class="inline-actions">
+          <button id="export-data" class="quiet" type="button">Exportar JSON</button>
+          <button id="import-data" class="quiet" type="button">Importar JSON</button>
+          <input id="backup-file" type="file" accept=".json,application/json" hidden>
+        </div>
+      </details>
+      <details id="cleanup">
+        <summary>Revisar copias antiguas</summary>
+        <p class="help">Sesiones sin usar ni guardar en los últimos 90 días. Selecciona las que quieras borrar.</p>
+        <p id="cleanup-empty" class="help">No hay copias antiguas para revisar.</p>
+        <ul id="cleanup-list"></ul>
+        <button id="remove-old" class="danger" type="button" disabled>Borrar seleccionadas</button>
+      </details>
+      <div class="dialog-actions">
+        <button class="quiet" type="submit">Cerrar</button>
       </div>
     </form>
   </dialog>
@@ -163,12 +256,19 @@
       <label for="edit-alias">Alias</label>
       <input id="edit-alias" maxlength="48" required>
       <label class="check"><input id="favorite" type="checkbox"> Fijar como favorita</label>
+      <label class="check"><input id="confirm-account" type="checkbox"> Confirmar siempre antes de cambiar a esta cuenta</label>
+      <label for="edit-group">Grupo</label>
+      <input id="edit-group" list="group-options" maxlength="48">
+      <datalist id="group-options"></datalist>
+      <label for="edit-note">Nota privada</label>
+      <textarea id="edit-note" rows="2" maxlength="500" aria-describedby="private-note-help"></textarea>
+      <p id="private-note-help" class="help">Esta nota se queda en tu perfil de Chrome.</p>
       <div class="color-field">
         <label for="color">Color de cuenta</label>
         <input id="color" type="color" value="#25f4ee">
         <button id="clear-color" class="quiet" type="button">Quitar color</button>
       </div>
-      <div class="order-actions">
+      <div id="order-actions" class="order-actions">
         <p id="account-position" role="status"></p>
         <button id="move-up" class="quiet" type="button">Subir</button>
         <button id="move-down" class="quiet" type="button">Bajar</button>
@@ -177,6 +277,7 @@
       <div class="account-tools">
         <button id="reconnect" class="quiet" type="button">Reconectar en TikTok</button>
         <button id="refresh-profile" class="quiet" type="button">Actualizar perfil guardado</button>
+        <button id="archive" class="quiet" type="button"></button>
       </div>
       <div class="dialog-actions">
         <button id="unlink" class="danger" type="button">Borrar copia</button>
@@ -188,6 +289,21 @@
   <dialog id="confirm" aria-labelledby="confirm-title" aria-describedby="confirm-detail">
     <form id="confirm-form">
       <h2 id="confirm-title"></h2>
+      <div id="change-preview" class="change-preview" hidden>
+        <div class="preview-entry">
+          <span class="preview-caption">Ahora</span>
+          <span id="from-avatar" class="avatar" aria-hidden="true"></span>
+          <strong id="from-name" data-no-translate></strong>
+          <span id="from-handle" class="detail" data-no-translate></span>
+        </div>
+        <span class="preview-arrow" aria-hidden="true">→</span>
+        <div class="preview-entry">
+          <span class="preview-caption">Después</span>
+          <span id="to-avatar" class="avatar" aria-hidden="true"></span>
+          <strong id="to-name" data-no-translate></strong>
+          <span id="to-handle" class="detail" data-no-translate></span>
+        </div>
+      </div>
       <p id="confirm-detail"></p>
       <div class="dialog-actions">
         <button id="cancel-change" class="quiet" type="button" autofocus>Cancelar</button>
@@ -200,12 +316,20 @@
       <button type="button" class="account">
         <span class="avatar" aria-hidden="true"></span>
         <span class="identity">
-          <strong class="name"></strong>
-          <span class="detail"></span>
+          <strong class="name" data-no-translate></strong>
+          <span class="detail"><span class="handle" data-no-translate></span><span class="health"></span></span>
         </span>
         <span class="open-label">Cambiar</span>
       </button>
       <button type="button" class="more" aria-label="Editar cuenta">⋯</button>
+      <details class="quick-links">
+        <summary aria-label="Accesos rápidos" title="Accesos rápidos">↗</summary>
+        <div class="inline-actions">
+          <button type="button" class="quiet" data-destination="profile">Perfil</button>
+          <button type="button" class="quiet" data-destination="upload">Subir video</button>
+          <button type="button" class="quiet" data-destination="studio">TikTok Studio</button>
+        </div>
+      </details>
     </li>
   </template>
 </body>

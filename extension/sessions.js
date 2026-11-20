@@ -1,6 +1,8 @@
 export const hostPermission = "https://*.tiktok.com/*";
 export const home = "https://www.tiktok.com/";
 export const login = "https://www.tiktok.com/login";
+const studio = "https://www.tiktok.com/tiktokstudio";
+const upload = studio + "/upload";
 const domain = "tiktok.com";
 const partitionKey = { topLevelSite: "https://tiktok.com", hasCrossSiteAncestor: false };
 
@@ -19,12 +21,30 @@ export function safeTikTokPage(value) {
   }
 }
 
+export function postingPage(value) {
+  if (!isTikTokUrl(value)) return false;
+  const { hostname, pathname } = new URL(value);
+  return (hostname === domain || hostname === "www." + domain) &&
+    /^\/(?:upload(?:\/|$)|tiktokstudio(?:\/(?:upload|publish|edit)(?:\/|$)|\/?$))/i.test(pathname);
+}
+
+export function validQuickDestination(destination) {
+  return ["profile", "upload", "studio"].includes(destination);
+}
+
+export function quickTikTokPage(destination, handle) {
+  if (destination === "upload") return upload;
+  if (destination === "studio") return studio;
+  if (destination !== "profile" || typeof handle !== "string" || !/^@[a-z0-9._]{1,24}$/i.test(handle)) return null;
+  return home + handle;
+}
+
 export async function tiktokTabs() {
   const tabs = await chrome.tabs.query({});
   return tabs.filter((tab) => !tab.incognito && [tab.url, tab.pendingUrl].some(isTikTokUrl));
 }
 
-function isTikTokUrl(value) {
+export function isTikTokUrl(value) {
   if (!value) return false;
   try {
     const { protocol, hostname } = new URL(value);
@@ -54,13 +74,25 @@ function isFresh(cookie) {
   return cookie.expirationDate === undefined || cookie.expirationDate > Date.now() / 1000;
 }
 
-// Use TikTok's desktop session markers as heuristics. Only TikTok can confirm the login.
-export async function fingerprint(cookies) {
-  const candidates = cookies.filter((cookie) =>
+function candidateCookies(cookies) {
+  return (Array.isArray(cookies) ? cookies : []).filter((cookie) =>
     !cookie.partitionKey && isFresh(cookie) && [".tiktok.com", "tiktok.com", "www.tiktok.com"].includes(cookie.domain)
   );
-  const session = candidates.find((cookie) => cookie.name === "sessionid" && cookie.value) ??
+}
+
+function sessionCookie(candidates) {
+  return candidates.find((cookie) => cookie.name === "sessionid" && cookie.value) ??
     candidates.find((cookie) => cookie.name === "sessionid_ss" && cookie.value);
+}
+
+export function hasFreshSession(cookies) {
+  return Boolean(sessionCookie(candidateCookies(cookies)));
+}
+
+// Use TikTok cookie markers to locate a saved account. Confirm the handle separately.
+export async function fingerprint(cookies) {
+  const candidates = candidateCookies(cookies);
+  const session = sessionCookie(candidates);
   if (!session) return null;
   const user = candidates.find((cookie) => cookie.name === "uid_tt" && cookie.value) ??
     candidates.find((cookie) => cookie.name === "uid_tt_ss" && cookie.value);

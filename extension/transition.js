@@ -1,3 +1,6 @@
+import { readPreferences } from "./preferences.js";
+import { setLocale, translate, translateDom } from "./i18n.js";
+
 const title = document.querySelector("#title");
 const status = document.querySelector("#status");
 const actions = document.querySelector("#actions");
@@ -18,18 +21,18 @@ let shownError = null;
 
 function render(result) {
   if (result?.working || result?.opened) {
-    if (result.mode === "switch" && result.alias) title.textContent = `Cambiando a «${result.alias}»…`;
-    else if (result.mode === "login") title.textContent = "Abriendo TikTok para iniciar sesión";
-    else if (result.mode === "recover") title.textContent = "Restaurando la sesión anterior";
-    status.textContent = "Espera un momento mientras se prepara TikTok.";
+    if (result.mode === "switch" && result.alias) title.textContent = translate(`Cambiando a «${result.alias}»…`);
+    else if (result.mode === "login") title.textContent = translate("Abriendo TikTok para iniciar sesión");
+    else if (result.mode === "recover") title.textContent = translate("Restaurando la sesión anterior");
+    status.textContent = translate("Espera un momento mientras se prepara TikTok.");
     actions.hidden = true;
     shownError = null;
     return;
   }
   const error = result?.error ?? "unexpected";
   if (shownError !== error) {
-    title.textContent = "No se pudo completar el cambio";
-    status.textContent = messages[error] ?? messages.unexpected;
+    title.textContent = translate("No se pudo completar el cambio");
+    status.textContent = translate(messages[error] ?? messages.unexpected);
     shownError = error;
   }
   actions.hidden = false;
@@ -41,7 +44,7 @@ async function send(command) {
   sending = true;
   try {
     if (command === "transitionRetry") {
-      title.textContent = "Preparando la sesión";
+      title.textContent = translate("Preparando la sesión");
       render({ working: true });
     }
     const result = await chrome.runtime.sendMessage({ command });
@@ -60,4 +63,8 @@ function refresh() {
 }
 
 retry.addEventListener("click", () => send("transitionRetry"));
-void refresh();
+readPreferences().then(({ locale }) => {
+  setLocale(locale);
+  translateDom();
+}, () => console.warn("MultiTikTok: preferencias de idioma no disponibles."))
+  .then(refresh);

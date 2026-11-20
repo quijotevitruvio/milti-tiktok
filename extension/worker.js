@@ -1,24 +1,26 @@
-import { hostPermission, tiktokTabs } from "./sessions.js";
+import { hasFreshSession, hostPermission, isTikTokUrl, tiktokTabs } from "./sessions.js";
+import { applyAccountTool, checkAlias, editedAccount, publicAccount, readHistory, toolCommands } from "./account-tools.js";
 import { lock, persist, readVault, setProtection, touchVault, unlock, VaultError } from "./vault.js";
 import { readPreferences, savePreferences } from "./preferences.js";
 import { registerShortcuts } from "./shortcuts.js";
 import {
-  changeSession, focusTikTok, inspectSession, recover, retryTransition, saveAccount, transitionPage, transitionView
+  changeSession, clearVerification, focusTikTok, inspectSession, isPosting, readVerification, recover, retryTransition,
+  saveAccount, transitionPage, transitionView, verificationKey
 } from "./session-flow.js";
 
 const popupPage = chrome.runtime.getURL("popup.html");
 const permissions = { origins: [hostPermission] };
 const knownErrors = new Set([
-  "alias", "account_mismatch", "busy", "expired", "focus_failed", "identity_unconfirmed", "interrupted",
-  "invalid_color", "invalid_order", "locked", "multiple_tabs", "open_failed", "park_failed", "permission",
-  "phrase_length", "recovery", "restored", "save_tab", "setup_active", "sign_in", "storage", "unknown_account",
-  "unsaved", "wrong_phrase"
+  "alias", "account_mismatch", "busy", "confirm_account", "expired", "focus_failed", "identity_unconfirmed", "interrupted",
+  "invalid_archive", "invalid_backup", "invalid_cleanup", "invalid_color", "invalid_destination", "invalid_order", "locked",
+  "multiple_tabs", "open_failed", "park_failed", "permission", "phrase_length", "recovery", "restored", "save_tab",
+  "setup_active", "sign_in", "storage", "unknown_account", "unsaved", "wrong_phrase"
 ]);
 const humanCommands = new Set([
   "setProtection", "settings", "recover", "save", "edit", "reorder", "forget", "dismiss", "wipeAccounts",
-  "add", "switch", "reconnect", "cancelSetup", "focusTikTok", "transitionRetry"
+  "add", "switch", "reconnect", "cancelSetup", "focusTikTok", "transitionRetry", "quickLink", "undo", ...toolCommands
 ]);
-const sessionCommands = new Set(["add", "switch", "reconnect", "recover", "transitionRetry"]);
+const sessionCommands = new Set(["add", "switch", "reconnect", "recover", "transitionRetry", "quickLink", "undo"]);
 let busy = false;
 
 chrome.runtime.onMessage.addListener((message, sender, respond) => {
@@ -37,7 +39,8 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
   return true;
 });
 
-registerShortcuts({ openPrevious });
+registerShortcuts({ openPrevious: () => openShortcut((state) => state.previous),
+  openFavorite: () => openShortcut((_state, settings) => settings.favoriteShortcutId) });
 
 function errorResponse(error) {
   return { error: error instanceof VaultError && knownErrors.has(error.message) ? error.message : "unexpected" };
@@ -46,11 +49,12 @@ function errorResponse(error) {
 async function exclusive(action, command) {
   if (busy) return { error: "busy" };
   busy = true;
+  if (sessionCommands.has(command) || command === "lock") syncBadge(true);
   try {
     return await action();
   } catch (error) {
     const result = errorResponse(error);
-    if (sessionCommands.has(command)) {
+    if (sessionCommands.has(command) && result.error !== "confirm_account") {
       try {
         await chrome.storage.session.set({ lastSessionError: result.error });
       } catch {
@@ -60,6 +64,7 @@ async function exclusive(action, command) {
     return result;
   } finally {
     busy = false;
+    if (command !== "view" || badgeDirty) syncBadge();
   }
 }
 
@@ -79,34 +84,47 @@ async function renew(vault) {
 async function view(vault, allowed) {
   const { state } = vault;
   const [settings, sessionStorage] = await Promise.all([
-    readPreferences(), chrome.storage.session.get(["confirmPrevious", "lastSessionError"])
+    readPreferences(), chrome.storage.session.get(["confirmAccount", "lastSessionError", verificationKey])
   ]);
   const defaults = {
     allowed, protected: !state || Boolean(vault.salt), unlocked: Boolean(state), active: null, previous: null,
     recovery: false, invite: false, accounts: [], canSave: false, setup: null, identity: null, tiktokTabs: [],
-    unsaved: false, confirmPrevious: null, settings
+    unsaved: false, confirmPrevious: null, confirmAccount: null, posting: false, verification: null, history: [], settings
   };
   if (!state) return defaults;
   const session = allowed && !state.pending ? await inspectSession(state) : null;
   const tabs = session?.tabs ?? (allowed ? await tiktokTabs() : []);
   const active = session?.current?.id ?? null;
-  const hasAccount = (id) => state.accounts.some((account) => account.id === id);
+  const previous = switchableAccount(state, state.previous)?.id ?? null;
   const savedError = sessionStorage.lastSessionError;
   const lastError = session?.error === "account_mismatch" ? "account_mismatch"
     : knownErrors.has(savedError) ? savedError : null;
-  const confirmPrevious = sessionStorage.confirmPrevious === state.previous && state.previous !== active &&
-    hasAccount(state.previous) ? state.previous : null;
+  const confirmAccount = allowed && !state.pending && !state.setup
+    ? switchableAccount(state, sessionStorage.confirmAccount)?.id ?? null : null;
   return {
-    ...defaults, active, previous: hasAccount(state.previous) ? state.previous : null,
-    recovery: Boolean(state.pending), invite: state.invite === "pending", confirmPrevious,
-    accounts: state.accounts.map(({ id, alias, favorite, avatar, handle, color }) => ({
-      id, alias, favorite: Boolean(favorite), avatar: avatar ?? null, handle: handle ?? null, color: color ?? null
-    })),
+    ...defaults, active, previous, confirmAccount,
+    recovery: Boolean(state.pending), invite: state.invite === "pending",
+    confirmPrevious: confirmAccount === previous ? previous : null,
+    accounts: state.accounts.map((account) => ({ ...publicAccount(account), health: accountHealth(account, session) })),
+    history: readHistory(state), posting: isPosting(tabs),
+    verification: readVerification(state, session, sessionStorage[verificationKey]),
     setup: state.setup ?? null, canSave: Boolean(session?.canSave), identity: session?.profile ?? null,
     tiktokTabs: tabs.map(({ id }) => ({ id })),
-    unsaved: Boolean(session?.identity && !active),
+    unsaved: Boolean(session?.identity && !session.recognized),
     ...(lastError ? { lastError } : {})
   };
+}
+
+function switchableAccount(state, id) {
+  return state?.accounts.find((account) => account.id === id && !account.archived && !account.metadataOnly);
+}
+
+function accountHealth(account, session) {
+  if (account.archived) return "archived";
+  if (account.metadataOnly) return "reconnect";
+  if (session?.recognized?.id === account.id) return session.verified ? "active" : "unconfirmed";
+  if (!account.identity || !hasFreshSession(account.cookies)) return "expired";
+  return "ready";
 }
 
 async function dispatch(message, tabId) {
@@ -124,7 +142,7 @@ async function dispatch(message, tabId) {
     return view(await readVault(), allowed);
   }
   if (command === "dismissPrevious") {
-    await chrome.storage.session.remove("confirmPrevious");
+    await chrome.storage.session.remove(["confirmAccount", "confirmPrevious"]);
     return view(vault, allowed);
   }
   if (!vault.state) throw new VaultError("locked");
@@ -136,8 +154,15 @@ async function dispatch(message, tabId) {
     return view(vault, allowed);
   }
   if (command === "settings") {
+    if (message.favoriteShortcutId != null && !switchableAccount(vault.state, message.favoriteShortcutId)) {
+      throw new VaultError("unknown_account");
+    }
     try {
-      await savePreferences({ quickSwitch: message.quickSwitch, autoLockMinutes: message.autoLockMinutes });
+      await savePreferences({
+        quickSwitch: message.quickSwitch, autoLockMinutes: message.autoLockMinutes,
+        favoriteShortcutId: message.favoriteShortcutId, density: message.density, sortMode: message.sortMode,
+        highContrast: message.highContrast, locale: message.locale, seenVersion: message.seenVersion
+      });
     } catch {
       throw new VaultError("storage");
     }
@@ -147,22 +172,36 @@ async function dispatch(message, tabId) {
   const { state } = vault;
   if (command === "wipeAccounts") {
     if (state.pending) throw new VaultError("recovery");
-    await write(vault, { ...state, accounts: [], active: null, previous: null, setup: null });
-    await chrome.storage.session.remove(["confirmPrevious", "lastSessionError"]);
+    await write(vault, { ...state, accounts: [], active: null, previous: null, setup: null, history: [] });
+    await chrome.storage.session.remove(["confirmAccount", "confirmPrevious", "lastSessionError", verificationKey]);
+    return view(await readVault(), allowed);
+  }
+  if (toolCommands.has(command)) {
+    if (state.pending) throw new VaultError("recovery");
+    const session = allowed && ["archive", "removeOld"].includes(command) ? await inspectSession(state) : null;
+    const result = applyAccountTool(state, message, { activeId: session?.recognized?.id });
+    if (result.backup) return { backup: result.backup };
+    await write(vault, result.state);
     return view(await readVault(), allowed);
   }
   if (!allowed) throw new VaultError("permission");
   if (command === "recover" || command === "transitionRetry") {
-    if (command === "recover") await recover(vault);
-    else await retryTransition(vault, tabId);
+    if (command === "recover") {
+      await recover(vault);
+      await clearVerification();
+    } else {
+      await retryTransition(vault, tabId);
+    }
     await chrome.storage.session.remove("lastSessionError");
     return command === "recover" ? view(await readVault(), allowed) : { opened: true };
   }
   if (state.pending) throw new VaultError("recovery");
   switch (command) {
-    case "save":
-      await saveAccount(vault, message.alias, checkAlias);
-      break;
+    case "save": {
+      const duplicate = await saveAccount(vault, message.alias, checkAlias);
+      await chrome.storage.session.remove("lastSessionError");
+      return { ...await view(await readVault(), allowed), duplicate };
+    }
     case "edit":
       await editAccount(vault, message);
       break;
@@ -191,37 +230,41 @@ async function dispatch(message, tabId) {
       break;
     case "add":
     case "reconnect":
-    case "switch": {
-      await chrome.storage.session.remove("confirmPrevious");
-      const destination = await changeSession(vault, command, message.id);
+    case "quickLink":
+    case "switch":
+    case "undo": {
+      let id = message.id;
+      if (command === "undo") {
+        const pending = (await chrome.storage.session.get(verificationKey))[verificationKey];
+        if (pending?.accountId !== state.active || !pending?.previousId ||
+            pending.previousId !== state.previous || (id && pending.previousId !== id)) {
+          throw new VaultError("unknown_account");
+        }
+        id = pending.previousId;
+      }
+      await chrome.storage.session.remove(["confirmAccount", "confirmPrevious"]);
+      const isQuickLink = command === "quickLink";
+      const mode = isQuickLink || command === "undo" ? "switch" : command;
+      const destination = await changeSession(vault, mode, id, {
+        confirmed: message.confirmed,
+        destination: isQuickLink ? message.destination ?? null : undefined
+      });
       await chrome.storage.session.remove("lastSessionError");
       return { destination };
     }
     default:
       throw new VaultError("unexpected");
   }
-  if (["save", "cancelSetup"].includes(command)) await chrome.storage.session.remove("lastSessionError");
+  if (command === "cancelSetup") await chrome.storage.session.remove("lastSessionError");
   return view(await readVault(), allowed);
-}
-
-function checkAlias(alias) {
-  if (typeof alias !== "string" || !alias.trim() || alias.trim().length > 48) {
-    throw new VaultError("alias");
-  }
-  return alias.trim();
 }
 
 async function editAccount(vault, message) {
   const { state } = vault;
-  if (!state.accounts.some(({ id }) => id === message.id)) throw new VaultError("unknown_account");
-  const alias = checkAlias(message.alias);
-  const color = message.color;
-  if (color !== undefined && color !== null && (typeof color !== "string" || !/^#[0-9a-f]{6}$/i.test(color))) {
-    throw new VaultError("invalid_color");
-  }
-  const accounts = state.accounts.map((account) => account.id === message.id
-    ? { ...account, alias, favorite: Boolean(message.favorite), ...(color === undefined ? {} : { color }) }
-    : account);
+  const existing = state.accounts.find(({ id }) => id === message.id);
+  if (!existing) throw new VaultError("unknown_account");
+  const updated = editedAccount(existing, message);
+  const accounts = state.accounts.map((account) => account.id === message.id ? updated : account);
   await write(vault, { ...state, accounts });
 }
 
@@ -235,31 +278,101 @@ async function reorderAccounts(vault, ids) {
   await write(vault, { ...state, accounts: ids.map((id) => accountsById.get(id)) });
 }
 
-function openPrevious() {
-  return exclusive(async () => {
-    const allowed = await chrome.permissions.contains(permissions);
-    const [vault, settings] = await Promise.all([readVault(), readPreferences()]);
-    const previous = vault.state?.previous;
-    if (!allowed || !previous || !vault.state.accounts.some(({ id }) => id === previous)) {
-      await chrome.action.openPopup();
-      return {};
+async function openShortcut(selectId) {
+  const result = await exclusive(async () => {
+    const [allowed, vault, settings] = await Promise.all([
+      chrome.permissions.contains(permissions), readVault(), readPreferences()
+    ]);
+    const { state } = vault;
+    const account = state && switchableAccount(state, selectId(state, settings));
+    if (!allowed || !account || state.pending || state.setup) return { showPopup: true };
+    if (settings.quickSwitch && !account.requireConfirm) {
+      try {
+        return await dispatch({ command: "switch", id: account.id }, null);
+      } catch (error) {
+        const { error: code } = errorResponse(error);
+        if (code !== "confirm_account") {
+          await chrome.storage.session.set({ lastSessionError: code });
+          return { showPopup: true };
+        }
+      }
     }
-    if (!settings.quickSwitch) {
-      await renew(vault);
-      await chrome.storage.session.set({ confirmPrevious: previous });
-      await chrome.action.openPopup();
-      return {};
-    }
-    if (vault.state.pending || vault.state.setup) {
-      await chrome.action.openPopup();
-      return {};
-    }
-    try {
-      return await dispatch({ command: "switch", id: previous }, null);
-    } catch (error) {
-      await chrome.storage.session.set({ lastSessionError: errorResponse(error).error });
-      await chrome.action.openPopup();
-      throw error;
-    }
+    await renew(vault);
+    await chrome.storage.session.set({ confirmAccount: account.id });
+    return { showPopup: true };
   }, "switch");
+  if (result.showPopup || result.error) await chrome.action.openPopup();
 }
+
+function aliasInitials(alias) {
+  const words = alias.trim().split(/\s+/u);
+  return words.slice(0, 2).map((word) => Array.from(word)[0] ?? "").join("").toLocaleUpperCase().slice(0, 4);
+}
+
+let badgeTimer;
+let badgeRevision = 0;
+let badgeDirty = false;
+let badgeTabId;
+let desiredBadge;
+let badgeWrite = Promise.resolve();
+
+function writeBadge(text) {
+  if (text === desiredBadge) return;
+  desiredBadge = text;
+  badgeWrite = badgeWrite.then(() => chrome.action.setBadgeText({ text })).catch(() => {
+    if (desiredBadge === text) desiredBadge = undefined;
+    console.warn("MultiTikTok no pudo actualizar las iniciales del icono.");
+  });
+}
+
+function syncBadge(clear = false) {
+  badgeRevision += 1;
+  badgeDirty = true;
+  if (clear) writeBadge("");
+  if (!busy && badgeTimer === undefined) badgeTimer = setTimeout(refreshBadge, 150);
+}
+
+async function refreshBadge() {
+  badgeTimer = undefined;
+  if (busy) return;
+  const revision = badgeRevision;
+  badgeDirty = false;
+  let text = "";
+  let tabId;
+  try {
+    if (await chrome.permissions.contains(permissions)) {
+      const { state } = await readVault();
+      if (state && !state.pending && !state.setup) {
+        const { current, verified, tabs } = await inspectSession(state);
+        if (tabs.length === 1) tabId = tabs[0].id;
+        if (verified && current && !current.archived) text = aliasInitials(current.alias);
+      }
+    }
+  } catch {
+    console.warn("MultiTikTok no pudo comprobar la sesión para actualizar el icono.");
+  }
+  if (revision !== badgeRevision) return;
+  if (busy) {
+    badgeDirty = true;
+    return;
+  }
+  badgeTabId = tabId;
+  writeBadge(text);
+}
+
+chrome.permissions.onAdded.addListener(() => syncBadge());
+chrome.permissions.onRemoved.addListener(() => syncBadge(true));
+chrome.cookies.onChanged.addListener(({ cookie }) => {
+  if (/(^|\.)tiktok\.com$/i.test(cookie.domain)) syncBadge(true);
+});
+chrome.tabs.onUpdated.addListener((id, change, tab) => {
+  if ((change.url || change.status) &&
+      (id === badgeTabId || isTikTokUrl(change.url ?? tab.url) || isTikTokUrl(tab.pendingUrl))) syncBadge(true);
+});
+chrome.tabs.onRemoved.addListener((id) => syncBadge(id === badgeTabId));
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === "session" && changes.vaultKey && !changes.vaultKey.newValue) syncBadge(true);
+  if (area === "local" && changes.vaultV1) syncBadge(true);
+});
+chrome.runtime.onStartup.addListener(() => syncBadge(true));
+syncBadge(true);
