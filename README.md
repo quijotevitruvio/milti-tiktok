@@ -41,7 +41,7 @@ Si actualizas desde la versión 0.2 y ya tenías una frase, úsala una vez para 
 
 ## Apoyar el proyecto
 
-Desde **Apoyar** puedes seguir a [@quijotevitruvio](https://github.com/quijotevitruvio), dar una estrella al [repositorio de MultiTikTok](https://github.com/quijotevitruvio/milti-tiktok) o [invitarme a un cafecito por PayPal](https://paypal.me/bibliotecologo). Después del primer cambio también puede aparecer una invitación que puedes omitir con **Ahora no**. El apoyo es voluntario y la extensión está disponible desde la instalación.
+En el selector, **Dar estrella** abre el [repositorio de MultiTikTok](https://github.com/quijotevitruvio/milti-tiktok), **Cafecito** abre [PayPal](https://paypal.me/bibliotecologo) y **Sígueme** muestra los perfiles de [GitHub](https://github.com/quijotevitruvio) y [LinkedIn](https://www.linkedin.com/in/andr%C3%A9s-valencia-tob%C3%B3n/). Después del primer cambio puede aparecer una invitación que puedes omitir con **Ahora no**. El apoyo es voluntario y la extensión está disponible desde la instalación.
 
 ## Compilar desde el código fuente
 

@@ -42,6 +42,11 @@ function render() {
   ui.manager.hidden = !allowed || !unlocked || recovery;
   ui.recovery.hidden = !allowed || !recovery;
   ui.invite.hidden = !allowed || !invite || recovery;
+  if (!ui.invite.hidden) {
+    const account = accounts.find((item) => item.id === active);
+    const question = account ? `¿Te sirvió cambiar a «${account.alias}»?` : "¿Te ahorró otro inicio de sesión?";
+    ui["invite-message"].textContent = `${question} Una estrella ayuda a que más personas encuentren MultiTikTok.`;
+  }
   ui.add.hidden = !accounts.length;
   ui.previous.hidden = !accounts.some((account) => account.id === previous && account.id !== active);
 
@@ -180,8 +185,9 @@ ui.unlink.addEventListener("click", () => {
   ui.edit.close();
   send("forget", { id: editingId }, "Se borró la copia guardada.");
 });
-for (const id of ["dismiss", "star"]) {
-  ui[id].addEventListener("click", () => { send("dismiss"); });
-}
+ui.dismiss.addEventListener("click", () => send("dismiss"));
+ui.star.addEventListener("click", () => {
+  if (!ui.invite.hidden) send("dismiss");
+});
 
 send("view");

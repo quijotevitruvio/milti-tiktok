@@ -53,8 +53,14 @@ input:not([type="checkbox"]), select { width: 100%; border: 1px solid var(--line
 .primary { background: var(--pink); color: #101012; border: 0; border-radius: 7px; padding: 8px 12px; min-height: 36px; font-weight: 750; }
 .primary:hover:not(:disabled) { background: #ff6684; }
 #add .primary { justify-self: end; }
-aside { background: var(--soft); margin-top: 14px; border-radius: 8px; padding: 9px 12px; }
-aside div { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.support { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+.support-invite { background: var(--soft); border-left: 2px solid var(--cyan); border-radius: 6px; padding: 8px 10px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.support-invite p { font-size: 13px; overflow-wrap: anywhere; }
+.support-invite button { white-space: nowrap; color: var(--muted); }
+.support-actions { display: grid; grid-template-columns: 1.25fr 1fr 1fr; gap: 6px; }
+.support-actions :is(a,button) { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; padding: 5px; border: 1px solid var(--line); border-radius: 7px; background: transparent; color: var(--ink); font-size: 12px; font-weight: 700; text-decoration: none; }
+.support-actions :is(a,button):hover { background: var(--soft); border-color: var(--muted); }
+#coffee svg { color: var(--pink); }
 dialog { border: 1px solid var(--line); border-radius: 10px; width: min(345px, 95vw); color: var(--ink); background: var(--paper); }
 dialog::backdrop { background: #000a; }
 .check { display: flex; align-items: center; gap: 5px; }
