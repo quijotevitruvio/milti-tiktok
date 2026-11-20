@@ -11,12 +11,16 @@
   <header>
     <img src="icon.png" alt="" width="36" height="36">
     <h1>MultiTikTok</h1>
-    <button id="settings" class="quiet" type="button" hidden>Configuración</button>
+    <div class="header-actions">
+      <button id="open-panel" class="quiet" type="button" hidden>Panel lateral</button>
+      <button id="settings" class="quiet" type="button" hidden>Configuración</button>
+    </div>
   </header>
   <main>
     <p id="status" role="status"></p>
-    <section id="permission" hidden>
-      <p>MultiTikTok necesita acceso a TikTok para guardar y cambiar tus sesiones.</p>
+    <section id="permission" class="notice" hidden>
+      <h2>Permite el acceso a TikTok</h2>
+      <p>MultiTikTok necesita acceso a TikTok para guardar y cambiar tus sesiones en este perfil de Chrome.</p>
       <button id="allow" class="primary" type="button">Permitir acceso a TikTok</button>
     </section>
     <form id="unlock" hidden>
@@ -24,24 +28,70 @@
       <input id="phrase" type="password" autocomplete="current-password" minlength="12" maxlength="256" required>
       <button class="primary" type="submit">Desbloquear sesiones</button>
     </form>
-    <p id="recovery" hidden>El último cambio se interrumpió. Restaura la sesión anterior para continuar.
-      <button id="restore" class="primary" type="button">Restaurar sesión</button>
-    </p>
+    <section id="recovery" class="notice" hidden aria-labelledby="recovery-title">
+      <h2 id="recovery-title">Cambio interrumpido</h2>
+      <p>Restaura la sesión anterior y comprueba en TikTok qué cuenta quedó abierta.</p>
+      <div class="dialog-actions">
+        <a id="recovery-report" href="#" target="_blank" rel="noopener noreferrer">Reportar problema</a>
+        <button id="restore" class="primary" type="button">Restaurar sesión</button>
+      </div>
+    </section>
     <div id="manager" hidden>
-     <div class="list-heading">
-      <h2 id="accounts-title">Tus cuentas</h2>
-      <button id="previous" class="quiet" type="button" hidden>Volver a la anterior</button>
-     </div>
-     <ul id="accounts" aria-labelledby="accounts-title"></ul>
-     <form id="save">
-       <label for="alias">Alias de la cuenta abierta</label>
-       <input id="alias" placeholder="Ej. Personal o @usuario" maxlength="48" required>
-       <div class="dialog-actions">
-         <a href="https://www.tiktok.com/" target="_blank" rel="noopener noreferrer">Ir a TikTok</a>
-         <button class="primary" type="submit">Guardar sesión</button>
-       </div>
-     </form>
-     <button id="add" class="quiet" type="button" hidden>Iniciar sesión en otra cuenta</button>
+      <section id="active-session" aria-labelledby="active-title">
+        <span id="active-avatar" class="avatar" aria-hidden="true"></span>
+        <div class="identity">
+          <h2 id="active-title">Sesión en TikTok</h2>
+          <strong id="active-handle"></strong>
+          <span id="active-detail" class="detail"></span>
+        </div>
+      </section>
+
+      <details id="tabs">
+        <summary id="tabs-summary"></summary>
+        <ul id="tab-list" aria-label="Pestañas abiertas de TikTok"></ul>
+        <p id="tab-hint" class="help" hidden>Para cambiar o guardar, deja abierta una sola pestaña de TikTok. Guarda tu trabajo antes de cerrar las demás.</p>
+      </details>
+
+      <section id="onboarding" class="notice" hidden aria-labelledby="onboarding-title">
+        <h2 id="onboarding-title">Guarda tu primera cuenta</h2>
+        <ol>
+          <li>Abre TikTok desde el selector.</li>
+          <li>Inicia sesión en TikTok y vuelve aquí.</li>
+          <li>Elige un alias y guarda la sesión.</li>
+        </ol>
+      </section>
+
+      <section id="setup" class="notice" hidden aria-labelledby="setup-title">
+        <h2 id="setup-title"></h2>
+        <p id="setup-hint" role="status"></p>
+        <div class="dialog-actions">
+          <button id="cancel-setup" class="quiet" type="button">Cancelar</button>
+          <button id="focus-setup-tab" class="quiet" type="button" hidden>Volver a TikTok</button>
+          <a id="open-tiktok-login" href="https://www.tiktok.com/login" target="_blank" rel="noopener noreferrer">Abrir inicio de sesión</a>
+        </div>
+      </section>
+
+      <form id="save" hidden>
+        <label for="alias">Alias de la sesión</label>
+        <input id="alias" placeholder="Ej. Personal o @usuario" maxlength="48" required>
+        <div class="dialog-actions">
+          <a id="open-tiktok" href="https://www.tiktok.com/" target="_blank" rel="noopener noreferrer">Ir a TikTok</a>
+          <button id="save-session" class="primary" type="submit">Guardar sesión</button>
+        </div>
+      </form>
+
+      <section id="account-manager" hidden aria-labelledby="accounts-title">
+        <div class="list-heading">
+          <h2 id="accounts-title">Tus cuentas</h2>
+          <button id="previous" class="quiet" type="button" hidden>Volver a la anterior</button>
+        </div>
+        <label for="search" class="visually-hidden">Buscar por alias o @usuario</label>
+        <input id="search" type="search" placeholder="Buscar por alias o @usuario">
+        <p id="no-results" class="help" role="status" hidden>No hay cuentas que coincidan.</p>
+        <ul id="accounts" aria-labelledby="accounts-title"></ul>
+      </section>
+
+      <button id="add" class="primary" type="button" hidden>Agregar cuenta</button>
     </div>
     <section class="support" aria-label="Apoyar el proyecto">
       <aside id="invite" class="support-invite" hidden>
@@ -84,10 +134,26 @@
         <label for="new-phrase">Nueva frase de acceso</label>
         <input id="new-phrase" type="password" autocomplete="new-password" minlength="12" maxlength="256" placeholder="Al menos 12 caracteres">
       </div>
+      <label class="check"><input id="quick-switch" type="checkbox"> Cambio rápido entre cuentas guardadas</label>
+      <p class="help">Omite la confirmación habitual al cambiar. Los avisos de seguridad siguen activos.</p>
+      <label for="auto-lock">Bloquear por inactividad</label>
+      <select id="auto-lock" aria-describedby="auto-lock-help">
+        <option value="0">Desactivado</option>
+        <option value="5">5 minutos</option>
+        <option value="15">15 minutos</option>
+        <option value="30">30 minutos</option>
+        <option value="60">1 hora</option>
+      </select>
+      <p id="auto-lock-help" class="help">Requiere una frase de acceso.</p>
       <div class="dialog-actions">
         <button id="lock" class="quiet" type="button" hidden>Bloquear</button>
         <button id="close-settings" class="quiet" type="button">Cerrar</button>
         <button class="primary" type="submit">Guardar</button>
+      </div>
+      <ul id="shortcuts" aria-label="Atajos de teclado" hidden></ul>
+      <div class="settings-tools">
+        <a id="report" href="#" target="_blank" rel="noopener noreferrer">Reportar problema</a>
+        <button id="wipe" class="danger" type="button">Borrar todas las copias</button>
       </div>
     </form>
   </dialog>
@@ -97,20 +163,35 @@
       <label for="edit-alias">Alias</label>
       <input id="edit-alias" maxlength="48" required>
       <label class="check"><input id="favorite" type="checkbox"> Fijar como favorita</label>
+      <div class="color-field">
+        <label for="color">Color de cuenta</label>
+        <input id="color" type="color" value="#25f4ee">
+        <button id="clear-color" class="quiet" type="button">Quitar color</button>
+      </div>
+      <div class="order-actions">
+        <p id="account-position" role="status"></p>
+        <button id="move-up" class="quiet" type="button">Subir</button>
+        <button id="move-down" class="quiet" type="button">Bajar</button>
+      </div>
+      <p id="edit-status" class="help" role="status" hidden></p>
+      <div class="account-tools">
+        <button id="reconnect" class="quiet" type="button">Reconectar en TikTok</button>
+        <button id="refresh-profile" class="quiet" type="button">Actualizar perfil guardado</button>
+      </div>
       <div class="dialog-actions">
-      <button id="unlink" class="danger" type="button">Borrar copia</button>
+        <button id="unlink" class="danger" type="button">Borrar copia</button>
         <button id="cancel" class="quiet" type="button">Cancelar</button>
         <button class="primary" type="submit">Guardar</button>
       </div>
     </form>
   </dialog>
-  <dialog id="confirm" aria-labelledby="confirm-title">
+  <dialog id="confirm" aria-labelledby="confirm-title" aria-describedby="confirm-detail">
     <form id="confirm-form">
-      <h2 id="confirm-title">Cambiar sesión</h2>
-      <p>Guarda lo que estés haciendo y deja abierta solo una pestaña de TikTok. Después del cambio, comprueba tu @usuario en TikTok.</p>
+      <h2 id="confirm-title"></h2>
+      <p id="confirm-detail"></p>
       <div class="dialog-actions">
-        <button id="cancel-change" class="quiet" type="button">Cancelar</button>
-        <button class="primary" type="submit">Continuar</button>
+        <button id="cancel-change" class="quiet" type="button" autofocus>Cancelar</button>
+        <button id="confirm-action" class="primary" type="submit">Continuar</button>
       </div>
     </form>
   </dialog>

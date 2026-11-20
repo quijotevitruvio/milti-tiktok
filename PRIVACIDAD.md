@@ -8,4 +8,6 @@ Las copias guardadas, los alias, los favoritos y las URL de las fotos se cifran 
 - `cookies` y el permiso opcional para `https://*.tiktok.com/*` permiten leer y aplicar cookies de TikTok. El permiso para TikTok se solicita al activar el selector.
 - `scripting` lee la foto del perfil en la pestaña de TikTok cuando guardas una sesión. Para mostrarla, el selector solicita la imagen al CDN de TikTok sin enviar una URL de referencia.
 
+Desde la versión 0.4, el selector también puede leer el `@usuario` de la cuenta abierta en TikTok y guardarlo cifrado para distinguir cuentas y reconectar la correcta. El color y el orden de las cuentas se guardan junto con el alias. `sidePanel` permite mostrar el selector al lado de TikTok y `alarms` programa el bloqueo por inactividad cuando el usuario lo activa. Los informes de problemas incluyen la versión de la extensión y, cuando corresponde, un código de error.
+
 Para borrar una copia guardada, abre **⋯** en esa cuenta. Para borrar toda la lista y su configuración, elimina la extensión desde Chrome. Los enlaces de apoyo abren GitHub o PayPal solo cuando los eliges. Desde la versión 0.3.2, **Sígueme** también ofrece un enlace a LinkedIn.

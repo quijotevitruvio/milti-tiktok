@@ -4,6 +4,43 @@ export const login = "https://www.tiktok.com/login";
 const domain = "tiktok.com";
 const partitionKey = { topLevelSite: "https://tiktok.com", hasCrossSiteAncestor: false };
 
+export function safeTikTokPage(value) {
+  try {
+    const url = new URL(value);
+    const host = url.hostname === domain || url.hostname === `www.${domain}`;
+    const browse = url.pathname === "/" || /^\/(?:foryou|following|explore|friends)\/?$/.test(url.pathname);
+    const profile = /^\/@[a-z0-9._]{1,24}(?:\/video\/[0-9]+)?\/?$/i.test(url.pathname);
+    if (!host || url.protocol !== "https:" || url.username || url.password || url.port || !(browse || profile)) {
+      return null;
+    }
+    return `${url.origin}${url.pathname}`;
+  } catch {
+    return null;
+  }
+}
+
+export async function tiktokTabs() {
+  const tabs = await chrome.tabs.query({});
+  return tabs.filter((tab) => !tab.incognito && [tab.url, tab.pendingUrl].some(isTikTokUrl));
+}
+
+function isTikTokUrl(value) {
+  if (!value) return false;
+  try {
+    const { protocol, hostname } = new URL(value);
+    return protocol === "https:" && (hostname === domain || hostname.endsWith(`.${domain}`));
+  } catch {
+    return false;
+  }
+}
+
+export function isProfileSource(value) {
+  if (!isTikTokUrl(value)) return false;
+  const { hostname, pathname } = new URL(value);
+  return (hostname === domain || hostname === `www.${domain}`) &&
+    !/^\/(?:login|logout|signup)(?:\/|$)/i.test(pathname);
+}
+
 export async function readCookies() {
   const [regular, partitioned] = await Promise.all([
     chrome.cookies.getAll({ domain }),
