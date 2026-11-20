@@ -22,12 +22,12 @@
   </header>
   <main>
     <p id="status" role="status" tabindex="-1"></p>
-    <section id="permission" class="notice" hidden>
+    <section id="permission" aria-labelledby="permission-title" hidden>
       <h2 id="permission-title">Permite el acceso a TikTok</h2>
       <p>MultiTikTok necesita acceso a TikTok para guardar y cambiar tus sesiones en este perfil de Chrome.</p>
       <div class="dialog-actions">
-        <button id="start-demo" class="quiet" type="button">Probar la demo</button>
         <button id="allow" class="primary" type="button">Permitir acceso a TikTok</button>
+        <button id="start-demo" class="secondary" type="button">Probar la demo</button>
       </div>
     </section>
     <form id="unlock" hidden>
@@ -70,7 +70,7 @@
       </section>
       <section id="whats-new" class="notice slim-notice" hidden aria-labelledby="whats-new-title">
         <h2 id="whats-new-title">Novedades de MultiTikTok</h2>
-        <p>Comprueba el @usuario tras cambiar, agrupa tus cuentas y accede rápido a Perfil, Subir video y TikTok Studio.</p>
+        <p>El selector ahora tiene más espacio para ver tus cuentas, buscar y filtrar.</p>
         <button id="dismiss-news" class="quiet" type="button">Entendido</button>
       </section>
 
@@ -114,18 +114,20 @@
           <h2 id="accounts-title">Tus cuentas</h2>
           <button id="previous" class="quiet" type="button" hidden>Volver a la anterior</button>
         </div>
-        <label for="search" class="visually-hidden">Buscar por alias o @usuario</label>
-        <input id="search" type="search" placeholder="Buscar por alias o @usuario">
-        <div class="filters">
-          <label for="account-filter" class="visually-hidden">Filtrar cuentas</label>
-          <select id="account-filter">
-            <option value="visible">Cuentas sin archivar</option>
-            <option value="favorites">Favoritas</option>
-            <option value="reconnect">Por reconectar</option>
-            <option value="archived">Archivadas</option>
-          </select>
-          <label for="group-filter" class="visually-hidden">Filtrar por grupo</label>
-          <select id="group-filter" hidden><option value="">Todos los grupos</option></select>
+        <div class="account-controls">
+          <label for="search" class="visually-hidden">Buscar por alias o @usuario</label>
+          <input id="search" type="search" placeholder="Buscar por alias o @usuario">
+          <div class="filters">
+            <label for="account-filter" class="visually-hidden">Filtrar cuentas</label>
+            <select id="account-filter">
+              <option value="visible">Cuentas sin archivar</option>
+              <option value="favorites">Favoritas</option>
+              <option value="reconnect">Por reconectar</option>
+              <option value="archived">Archivadas</option>
+            </select>
+            <label for="group-filter" class="visually-hidden">Filtrar por grupo</label>
+            <select id="group-filter" hidden><option value="">Todos los grupos</option></select>
+          </div>
         </div>
         <p id="no-results" class="help" role="status" hidden>No hay cuentas que coincidan.</p>
         <div id="accounts" aria-labelledby="accounts-title"></div>
